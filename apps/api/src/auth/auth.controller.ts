@@ -23,7 +23,7 @@ export class AuthController {
     ownerName: string;
     password: string;
     paymentCompleted: boolean;
-    preapprovalId?: string; // <- alterado
+    preapprovalId?: string;
   }) {
     return this.authService.registerTenant(body);
   }
