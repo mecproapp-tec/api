@@ -17,27 +17,29 @@ export class WebhookController {
 
     if (type === 'preapproval') {
       const subscription = await this.paymentService.getSubscription(data.id);
-
       if (subscription.status === 'authorized') {
-        const trialEndsAt = new Date();
-        trialEndsAt.setDate(trialEndsAt.getDate() + 30);
-
-        await this.prisma.pendingSubscription.upsert({
-          where: { email: subscription.payer_email },
-          update: {
-            subscriptionId: subscription.id,
-            planId: subscription.preapproval_plan_id,
-            trialEndsAt,
-          },
-          create: {
-            email: subscription.payer_email,
-            subscriptionId: subscription.id,
-            planId: subscription.preapproval_plan_id,
-            trialEndsAt,
-          },
-        });
-
-        console.log(`✅ Pendência criada para ${subscription.payer_email}`);
+        const externalRef = subscription.external_reference;
+        if (externalRef) {
+          await this.prisma.pendingSubscription.update({
+            where: { id: externalRef },
+            data: {
+              subscriptionId: subscription.id,
+              planId: subscription.preapproval_plan_id,
+            },
+          });
+          console.log(`✅ Pendência ${externalRef} confirmada.`);
+        } else {
+          await this.prisma.pendingSubscription.upsert({
+            where: { email: subscription.payer_email },
+            update: { subscriptionId: subscription.id },
+            create: {
+              email: subscription.payer_email,
+              subscriptionId: subscription.id,
+              planId: subscription.preapproval_plan_id,
+              trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            },
+          });
+        }
       }
     }
 

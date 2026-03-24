@@ -34,6 +34,7 @@ export class AuthService {
     ownerName: string;
     password: string;
     paymentCompleted: boolean;
+    pendingId?: string;
   }) {
     const existingUser = await this.prisma.user.findUnique({ where: { email: data.email } });
     if (existingUser) throw new BadRequestException('Email já cadastrado');
@@ -41,10 +42,21 @@ export class AuthService {
     const existingTenant = await this.prisma.tenant.findUnique({ where: { documentNumber: data.documentNumber } });
     if (existingTenant) throw new BadRequestException('Documento já cadastrado');
 
-    const pending = await this.prisma.pendingSubscription.findUnique({
-      where: { email: data.email },
-    });
-    if (!pending) throw new BadRequestException('Pagamento não confirmado. Efetue o pagamento antes de cadastrar.');
+    let pending;
+    if (data.pendingId) {
+      pending = await this.prisma.pendingSubscription.findUnique({
+        where: { id: data.pendingId },
+      });
+    } else {
+      pending = await this.prisma.pendingSubscription.findFirst({
+        where: { email: data.email },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    if (!pending) {
+      throw new BadRequestException('Pagamento não confirmado. Efetue o pagamento antes de cadastrar.');
+    }
 
     const tenant = await this.prisma.tenant.create({
       data: {

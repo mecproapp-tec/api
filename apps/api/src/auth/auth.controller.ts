@@ -23,6 +23,7 @@ export class AuthController {
     ownerName: string;
     password: string;
     paymentCompleted: boolean;
+    pendingId?: string;
   }) {
     return this.authService.registerTenant(body);
   }

@@ -24,7 +24,7 @@ export class PaymentsController {
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
-        transaction_amount: 1.00,   // 🟢 ALTERADO PARA R$ 1,00 (teste)
+        transaction_amount: 1.00,
         currency_id: "BRL",
         free_trial: {
           frequency: 30,
@@ -52,5 +52,11 @@ export class PaymentsController {
       console.error('Erro ao criar plano:', error.response?.data || error);
       throw error;
     }
+  }
+
+  @Post('create-pending')
+  async createPending(@Body() body: { email: string }) {
+    const pending = await this.paymentService.createPendingSubscription(body.email);
+    return { checkoutUrl: pending.checkoutUrl, pendingId: pending.id };
   }
 }
