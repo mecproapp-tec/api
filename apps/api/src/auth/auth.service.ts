@@ -44,12 +44,12 @@ export class AuthService {
 
     let pending;
     if (data.pendingId) {
-      pending = await this.prisma.pendingSubscription.findUnique({
-        where: { id: data.pendingId },
+      pending = await this.prisma.pendingSubscription.findFirst({
+        where: { id: data.pendingId, status: 'paid' },
       });
     } else {
       pending = await this.prisma.pendingSubscription.findFirst({
-        where: { email: data.email },
+        where: { email: data.email, status: 'paid' },
         orderBy: { createdAt: 'desc' },
       });
     }

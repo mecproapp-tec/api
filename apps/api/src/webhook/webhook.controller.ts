@@ -15,7 +15,6 @@ export class WebhookController {
     @Body() body: any,
     @Headers('x-signature') signature: string,
   ) {
-    // Validação da assinatura (opcional, mas recomendada)
     const secret = process.env.MP_WEBHOOK_SECRET;
     if (secret && signature) {
       const expectedSignature = crypto
@@ -37,25 +36,28 @@ export class WebhookController {
       if (subscription.status === 'authorized') {
         const externalRef = subscription.external_reference;
         if (externalRef) {
-          // Atualiza a pendência com o subscriptionId real
           await this.prisma.pendingSubscription.update({
             where: { id: externalRef },
             data: {
               subscriptionId: subscription.id,
               planId: subscription.preapproval_plan_id,
+              status: 'paid',
             },
           });
-          console.log(`✅ Pendência ${externalRef} confirmada.`);
+          console.log(`✅ Pendência ${externalRef} confirmada e marcada como paga.`);
         } else {
-          // Fallback: criar pendência pelo email
           await this.prisma.pendingSubscription.upsert({
             where: { email: subscription.payer_email },
-            update: { subscriptionId: subscription.id },
+            update: {
+              subscriptionId: subscription.id,
+              status: 'paid',
+            },
             create: {
               email: subscription.payer_email,
               subscriptionId: subscription.id,
               planId: subscription.preapproval_plan_id,
               trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              status: 'paid',
             },
           });
         }
@@ -66,7 +68,6 @@ export class WebhookController {
       const payment = await this.paymentService.getPayment(data.id);
       if (payment.status === 'approved' && payment.payer?.email) {
         console.log(`✅ Pagamento aprovado para ${payment.payer.email}`);
-        // Aqui você pode querer tratar pagamentos avulsos, se necessário
       }
     }
 

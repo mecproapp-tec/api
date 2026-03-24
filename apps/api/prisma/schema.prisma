@@ -21,18 +21,21 @@ model ContactMessage {
   tenant    Tenant?  @relation(fields: [tenantId], references: [id])
 }
 
-
-
 /// ///////////////// ASSINATURAS PENDENTES (antes do cadastro) ////////////////////
 model PendingSubscription {
   id             String   @id @default(uuid())
   email          String   @unique
-  subscriptionId String   @unique
+  subscriptionId String?  // pode ser nulo até o webhook confirmar
   planId         String
   trialEndsAt    DateTime
+  status         String   @default("pending") // pending, paid, expired
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([email, status])
+  @@index([status])
 }
+
 /// ///////////////// TENANT (Oficina) ////////////////////
 model Tenant {
   id                     String                  @id @default(uuid())
@@ -48,10 +51,8 @@ model Tenant {
   trialEndsAt            DateTime?
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
-  // ⬇️ NOVOS CAMPOS
   subscriptionId         String?                 @unique
   paymentStatus          String?                 @default("pending")
-  // ⬆️ NOVOS CAMPOS
   appointments           Appointment[]
   clients                Client[]
   contactMessages        ContactMessage[]
@@ -64,6 +65,8 @@ model Tenant {
   users                  User[]
 
   @@index([status])
+  @@index([email])
+  @@index([documentNumber])
 }
 
 /// ///////////////// USUÁRIOS (proprietários e admins da oficina) ////////////////////
@@ -79,6 +82,9 @@ model User {
   clients       Client[]
   refreshTokens RefreshToken[]
   tenant        Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([tenantId])
 }
 
 /// ///////////////// SUPER ADMIN (opcional) ////////////////////
@@ -103,6 +109,10 @@ model Subscription {
   createdAt             DateTime           @default(now())
   payments              Payment[]
   tenant                Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([gatewaySubscriptionId])
 }
 
 /// ///////////////// PAYMENTS ////////////////////
@@ -118,6 +128,8 @@ model Payment {
   subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
   tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
+  @@index([subscriptionId])
   @@index([status])
 }
 
@@ -140,6 +152,10 @@ model Client {
   user         User?         @relation(fields: [userId], references: [id])
   estimates    Estimate[]
   invoices     Invoice[]
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([phone])
 }
 
 /// ///////////////// REFRESH TOKENS ////////////////////
@@ -152,6 +168,7 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([token])
 }
 
 /// ///////////////// AGENDAMENTOS ////////////////////
@@ -165,6 +182,10 @@ model Appointment {
   client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   notifications Notification[]
+
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([date])
 }
 
 /// ///////////////// ORÇAMENTOS ////////////////////
@@ -183,6 +204,10 @@ model Estimate {
   tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items             EstimateItem[]
   invoice           Invoice?
+
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([status])
 }
 
 model EstimateItem {
@@ -196,6 +221,7 @@ model EstimateItem {
   estimate    Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
 
   @@unique([estimateId, id])
+  @@index([estimateId])
 }
 
 /// ///////////////// ORÇAMENTOS (versão antiga, manter compatibilidade) ////////////////////
@@ -208,6 +234,9 @@ model Budget {
   status    String
   createdAt DateTime @default(now())
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([clientId])
 }
 
 /// ///////////////// FATURAS ////////////////////
@@ -226,6 +255,11 @@ model Invoice {
   estimate          Estimate?     @relation(fields: [estimateId], references: [id])
   tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items             InvoiceItem[]
+
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([status])
+  @@index([number])
 }
 
 model InvoiceItem {
@@ -239,6 +273,7 @@ model InvoiceItem {
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@unique([invoiceId, id])
+  @@index([invoiceId])
 }
 
 /// ///////////////// NOTIFICAÇÕES ////////////////////
@@ -253,6 +288,10 @@ model Notification {
   appointmentId Int?
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
   tenant        Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([appointmentId])
+  @@index([read, createdAt])
 }
 
 /// ///////////////// NOTIFICAÇÕES AGENDADAS (para o admin) ////////////////////
@@ -266,6 +305,9 @@ model ScheduledNotification {
   sent      Boolean  @default(false)
   createdAt DateTime @default(now())
   tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([schedule, sent])
 }
 
 /// ///////////////// ENUMS ////////////////////
