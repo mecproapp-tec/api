@@ -1,4 +1,3 @@
-// apps/api/src/app.module.ts
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
@@ -18,10 +17,12 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
 import { AppointmentsModule } from "./modules/appointments/appointments.module";
 import { ContactModule } from "./modules/contact/contact.module";
 import { WhatsappModule } from "./modules/whatsapp/whatsapp.module";
-import { PublicModule } from "./modules/public/public.module";
 
-import { AppController } from "./app.controller"; // 👈 importe o controlador
-import { AppService } from "./app.service";      // 👈 opcional, mas se usado
+// ❌ Remova esta linha se existir
+// import { PublicModule } from "./modules/public/public.module";
+
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
 
 @Module({
   imports: [
@@ -41,9 +42,9 @@ import { AppService } from "./app.service";      // 👈 opcional, mas se usado
     AppointmentsModule,
     ContactModule,
     WhatsappModule,
-    PublicModule,
+    // ❌ Não inclua PublicModule aqui
   ],
-  controllers: [AppController], // 👈 registre o controlador
-  providers: [AppService],      // 👈 se necessário (opcional)
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

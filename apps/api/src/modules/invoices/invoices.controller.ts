@@ -9,10 +9,9 @@ import {
   UseGuards,
   Req,
   Res,
-  BadRequestException,
 } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { Public } from '../../auth/public.decorator';
 import type { Response } from 'express';
 
@@ -52,14 +51,22 @@ export class InvoicesController {
       Number(id),
       req.user.tenantId,
     );
-    const baseUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+
+    const baseUrl =
+      process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+
+    // ✅ URL CORRETA COM /api
     const url = `${baseUrl}/api/public/invoices/share/${token}`;
+
     return { url };
   }
 
   @Post(':id/send-whatsapp')
   async sendViaWhatsApp(@Param('id') id: string, @Req() req) {
-    return this.invoicesService.sendViaWhatsApp(Number(id), req.user.tenantId);
+    return this.invoicesService.sendViaWhatsApp(
+      Number(id),
+      req.user.tenantId,
+    );
   }
 }
 
@@ -70,10 +77,32 @@ export class PublicInvoicesController {
   @Public()
   @Get('share/:token')
   async getSharedPdf(@Param('token') token: string, @Res() res: Response) {
-    if (!token) throw new BadRequestException('Token não fornecido');
-    const pdfBuffer = await this.invoicesService.getPdfByShareToken(token);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename=fatura-compartilhada.pdf`);
-    res.send(pdfBuffer);
+    if (!token) {
+      return res.status(400).send('Token não fornecido');
+    }
+
+    try {
+      const pdfBuffer =
+        await this.invoicesService.getPdfByShareToken(token);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        'inline; filename=fatura.pdf',
+      );
+
+      return res.send(pdfBuffer);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+
+      if (
+        error.message === 'Token inválido' ||
+        error.message === 'Token expirado'
+      ) {
+        return res.status(404).send('Link inválido ou expirado');
+      }
+
+      return res.status(500).send('Erro ao gerar PDF');
+    }
   }
 }

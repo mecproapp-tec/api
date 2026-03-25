@@ -9,10 +9,9 @@ import {
   UseGuards,
   Req,
   Res,
-  BadRequestException,
 } from '@nestjs/common';
 import { EstimatesService } from './estimates.service';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { Public } from '../../auth/public.decorator';
 import type { Response } from 'express';
 
@@ -57,7 +56,8 @@ export class EstimatesController {
       req.user.tenantId,
     );
     const baseUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
-    const url = `${baseUrl}/api/public/estimates/share/${token}`;
+    const apiBasePath = process.env.API_BASE_PATH || '/api';
+    const url = `${baseUrl}${apiBasePath}/public/estimates/share/${token}`;
     return { url };
   }
 
@@ -74,10 +74,23 @@ export class PublicEstimatesController {
   @Public()
   @Get('share/:token')
   async getSharedPdf(@Param('token') token: string, @Res() res: Response) {
-    if (!token) throw new BadRequestException('Token não fornecido');
-    const pdfBuffer = await this.estimatesService.getPdfByShareToken(token);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename=orcamento-compartilhado.pdf`);
-    res.send(pdfBuffer);
+    console.log(`[PublicEstimates] Recebido token: ${token}`);
+    if (!token) {
+      return res.status(400).send('Token não fornecido');
+    }
+
+    try {
+      const pdfBuffer = await this.estimatesService.getPdfByShareToken(token);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename=orcamento-compartilhado.pdf`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('[PublicEstimates] Erro ao gerar PDF:', error);
+      if (error.message === 'Token inválido' || error.message === 'Token expirado') {
+        res.status(404).send('Link inválido ou expirado');
+      } else {
+        res.status(500).send('Erro ao gerar PDF. Tente novamente mais tarde.');
+      }
+    }
   }
 }

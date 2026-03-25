@@ -155,13 +155,18 @@ export class EstimatesService {
     return estimate;
   }
 
-  async getPdfByShareToken(token: string): Promise<Buffer> {
-    const estimate = await this.validateShareToken(token);
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: estimate.tenantId },
-    });
-    return this.estimatesPdfService.generateEstimatePdf(estimate, tenant);
-  }
+ async getPdfByShareToken(token: string): Promise<Buffer> {
+  console.log(`[Estimates] Buscando PDF para token: ${token}`);
+  const estimate = await this.validateShareToken(token);
+  console.log(`[Estimates] Orçamento encontrado: ${estimate.id}`);
+  const tenant = await this.prisma.tenant.findUnique({
+    where: { id: estimate.tenantId },
+  });
+  console.log(`[Estimates] Tenant encontrado: ${tenant?.id}`);
+  const pdf = await this.estimatesPdfService.generateEstimatePdf(estimate, tenant);
+  console.log(`[Estimates] PDF gerado, tamanho: ${pdf.length} bytes`);
+  return pdf;
+}
 
   async sendViaWhatsApp(
     id: number,
