@@ -171,13 +171,12 @@ export class AuthService {
       throw new UnauthorizedException('Sua conta está bloqueada. Entre em contato com o administrador.');
     }
 
-    const activeSession = await this.prisma.userSession.findFirst({
+    // Remove qualquer sessão existente para este usuário
+    await this.prisma.userSession.deleteMany({
       where: { userId: user.id },
     });
-    if (activeSession) {
-      throw new UnauthorizedException('Usuário já está logado em outro dispositivo');
-    }
 
+    // Cria uma nova sessão
     const sessionToken = this.generateSessionToken();
     const ip = req.ip || req.socket.remoteAddress || '';
     const userAgent = req.headers['user-agent'] || '';
