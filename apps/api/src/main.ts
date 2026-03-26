@@ -4,6 +4,14 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 
 async function bootstrap() {
+  // Captura erros não tratados
+  process.on('unhandledRejection', (reason) => {
+    console.error('❌ Unhandled Rejection:', reason);
+  });
+  process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception:', err);
+  });
+
   console.log('🚀 Iniciando aplicação...');
   console.log(`📦 NODE_ENV: ${process.env.NODE_ENV}`);
   console.log(`🔍 PORT env: ${process.env.PORT}`);
@@ -73,10 +81,15 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   const host = '0.0.0.0';
 
-  const server = await app.listen(port, host);
-  const address = server.address();
-  console.log(`✅ Servidor ouvindo em http://${host}:${port}`);
-  console.log(`📡 Endereço real: ${JSON.stringify(address)}`);
-  console.log(`🚀 API rodando em ${process.env.APP_URL || `http://localhost:${port}`}`);
+  try {
+    const server = await app.listen(port, host);
+    const address = server.address();
+    console.log(`✅ Servidor ouvindo em http://${host}:${port}`);
+    console.log(`📡 Endereço real: ${JSON.stringify(address)}`);
+    console.log(`🚀 API rodando em ${process.env.APP_URL || `http://localhost:${port}`}`);
+  } catch (err) {
+    console.error('❌ Falha ao iniciar servidor:', err);
+    process.exit(1);
+  }
 }
 bootstrap();
