@@ -1,18 +1,40 @@
-FROM node:20-slim
-RUN apt-get update && apt-get install -y chromium && rm -rf /var/lib/apt/lists/*
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+FROM node:18-bullseye AS builder
+
+# Instalar dependências do Puppeteer
+RUN apt-get update && apt-get install -y \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxi6 \
+    libxtst6 \
+    libxrandr2 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libgbm1 \
+    libxshmfence1 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci --only=production --omit=dev && npm cache clean --force
+
 COPY . .
+
+# Gerar Prisma Client
 RUN npx prisma generate
+
+# Build NestJS
 RUN npm run build
 
-# Copia os templates .hbs para a pasta dist
-RUN mkdir -p dist/modules/invoices dist/modules/estimates
-RUN cp src/modules/invoices/*.hbs dist/modules/invoices/ 2>/dev/null || true
-RUN cp src/modules/estimates/*.hbs dist/modules/estimates/ 2>/dev/null || true
+# Copiar manualmente os templates (HBS e HTML) para o dist
+COPY src/modules/pdf/templates dist/modules/pdf/templates/
+COPY src/modules/estimates/*.hbs dist/modules/estimates/
+COPY src/modules/invoices/*.hbs dist/modules/invoices/
 
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+
+CMD ["npm", "run", "start:prod"]
