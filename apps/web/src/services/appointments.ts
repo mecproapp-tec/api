@@ -6,22 +6,17 @@ export interface Appointment {
   date: string;
   comment?: string;
   client?: {
+    id: number;
     name: string;
+    phone?: string;
+    vehicle?: string;
     plate?: string;
   };
 }
 
 export const getAppointments = async (): Promise<Appointment[]> => {
-  try {
-    const response = await api.get("/appointments");
-    return response.data;
-  } catch (error: any) {
-    if (error.response?.status === 404) {
-      console.warn("Rota /appointments não implementada. Retornando array vazio.");
-      return [];
-    }
-    throw error;
-  }
+  const response = await api.get("/appointments");
+  return response.data;
 };
 
 export const getAppointmentById = async (id: number): Promise<Appointment> => {

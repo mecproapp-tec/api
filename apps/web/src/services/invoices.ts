@@ -46,10 +46,7 @@ export const getInvoices = async (): Promise<Invoice[]> => {
     const response = await api.get("/invoices");
     return response.data;
   } catch (error: any) {
-    if (error.response?.status === 404) {
-      console.warn("Rota /invoices não implementada. Retornando array vazio.");
-      return [];
-    }
+    if (error.response?.status === 404) return [];
     throw error;
   }
 };

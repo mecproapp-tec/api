@@ -61,10 +61,7 @@ export const getEstimates = async (): Promise<Estimate[]> => {
       status: statusToFrontend[est.status] || est.status,
     }));
   } catch (error: any) {
-    if (error.response?.status === 404) {
-      console.warn("Rota /estimates não implementada. Retornando array vazio.");
-      return [];
-    }
+    if (error.response?.status === 404) return [];
     throw error;
   }
 };
@@ -104,11 +101,3 @@ export const updateEstimate = async (id: number, data: CreateEstimateData): Prom
 export const deleteEstimate = async (id: number): Promise<void> => {
   await api.delete(`/estimates/${id}`);
 };
-
-export function calculateTotalWithIss(items: EstimateItem[]): number {
-  return items.reduce((acc, item) => {
-    const itemTotal = item.price * item.quantity;
-    const iss = item.issPercent ? itemTotal * (item.issPercent / 100) : 0;
-    return acc + itemTotal + iss;
-  }, 0);
-}
