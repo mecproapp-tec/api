@@ -3,6 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,10 +16,11 @@ import { Queue } from 'bullmq';
 import { StorageService } from '../storage/storage.service';
 import { InvoicesPdfService } from './invoices-pdf.service';
 
-
-
 @Injectable()
-export class InvoicesService {
+export class InvoicesService implements OnModuleInit {
+  private readonly logger = new Logger(InvoicesService.name);
+  private redisAvailable = true;
+
   constructor(
     private prisma: PrismaService,
     private whatsappService: WhatsappService,
@@ -26,6 +29,22 @@ export class InvoicesService {
     private invoicesPdfService: InvoicesPdfService,
     @InjectQueue('pdf-invoice') private pdfQueue: Queue,
   ) {}
+
+  async onModuleInit() {
+    await this.checkRedisConnection();
+  }
+
+  private async checkRedisConnection() {
+    try {
+      const client = this.pdfQueue.client;
+      await client.ping();
+      this.logger.log('Redis disponível para filas');
+      this.redisAvailable = true;
+    } catch (error) {
+      this.logger.error(`Redis indisponível: ${error.message}. Usando fallback síncrono.`);
+      this.redisAvailable = false;
+    }
+  }
 
   async create(tenantId: string, data: any) {
     if (!data.items || data.items.length === 0) {
@@ -192,14 +211,7 @@ export class InvoicesService {
       where: { id: invoice.tenantId },
     });
 
-    // Se já tiver PDF gerado, retorna do storage (via URL) ou baixa?
-    // Melhor: se já tem URL, podemos baixar e retornar, ou redirecionar.
-    // Para simplificar, se já tiver PDF, podemos fazer uma requisição HTTP para buscar e retornar,
-    // mas isso adicionaria complexidade. Vamos gerar novamente? Não ideal.
-    // Vamos garantir que o PDF seja gerado e armazenado antes de retornar.
-    // Se não tiver PDF gerado, geramos agora (síncrono) e armazenamos.
     if (!invoice.pdfUrl || invoice.pdfStatus !== 'generated') {
-      // Gerar PDF agora (síncrono) e armazenar
       const pdfBuffer = await this.invoicesPdfService.generateInvoicePdf(invoice, tenant);
       const key = `${invoice.tenantId}/invoices/${invoice.id}.pdf`;
       const url = await this.storageService.upload(pdfBuffer, key);
@@ -213,12 +225,8 @@ export class InvoicesService {
         },
       });
 
-      // Retorna o buffer gerado
       return pdfBuffer;
     } else {
-      // Se já tem URL, precisamos buscar o PDF do storage e retornar.
-      // Para evitar download extra, podemos redirecionar para a URL pública.
-      // Mas como a função espera Buffer, vamos fazer uma requisição HTTP.
       const response = await fetch(invoice.pdfUrl);
       if (!response.ok) throw new Error('Erro ao buscar PDF do storage');
       const arrayBuffer = await response.arrayBuffer();
@@ -258,6 +266,36 @@ export class InvoicesService {
       items: invoice.items,
       client: invoice.client,
     };
+
+    if (!this.redisAvailable) {
+      this.logger.warn(`Redis indisponível: gerando PDF síncrono para fatura ${id}`);
+      try {
+        const pdfBuffer = await this.invoicesPdfService.generateInvoicePdf(invoiceData, tenant);
+        const key = `${tenantId}/invoices/${id}.pdf`;
+        const url = await this.storageService.upload(pdfBuffer, key);
+
+        await this.prisma.invoice.update({
+          where: { id, tenantId },
+          data: {
+            pdfUrl: url,
+            pdfStatus: 'generated',
+            pdfGeneratedAt: new Date(),
+          },
+        });
+
+        const message = this.buildWhatsAppMessage(invoice, url);
+        const whatsappLink = this.whatsappService.generateWhatsAppLink(client.phone, message);
+        return {
+          whatsappLink,
+          message,
+          pdfUrl: url,
+        };
+      } catch (error) {
+        this.logger.error(`Falha ao gerar PDF síncrono para fatura ${id}`, error);
+        throw new BadRequestException('Erro ao gerar PDF. Tente novamente mais tarde.');
+      }
+    }
+
     await this.pdfQueue.add('generate-invoice-pdf', {
       tenantId,
       invoiceId: id,

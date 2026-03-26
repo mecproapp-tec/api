@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { EstimateStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
@@ -9,10 +9,11 @@ import { StorageService } from '../storage/storage.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
-// ... resto do código, já ajustado anteriormente
-
 @Injectable()
-export class EstimatesService {
+export class EstimatesService implements OnModuleInit {
+  private readonly logger = new Logger(EstimatesService.name);
+  private redisAvailable = true;
+
   constructor(
     private prisma: PrismaService,
     private estimatesPdfService: EstimatesPdfService,
@@ -21,6 +22,22 @@ export class EstimatesService {
     private storageService: StorageService,
     @InjectQueue('pdf-estimate') private pdfQueue: Queue,
   ) {}
+
+  async onModuleInit() {
+    await this.checkRedisConnection();
+  }
+
+  private async checkRedisConnection() {
+    try {
+      const client = this.pdfQueue.client;
+      await client.ping();
+      this.logger.log('Redis disponível para filas');
+      this.redisAvailable = true;
+    } catch (error) {
+      this.logger.error(`Redis indisponível: ${error.message}. Usando fallback síncrono.`);
+      this.redisAvailable = false;
+    }
+  }
 
   async create(tenantId: string, data: { clientId: number; date: string; items: any[] }) {
     const client = await this.prisma.client.findFirst({
@@ -207,6 +224,36 @@ export class EstimatesService {
       items: estimate.items,
       client: estimate.client,
     };
+
+    if (!this.redisAvailable) {
+      this.logger.warn(`Redis indisponível: gerando PDF síncrono para orçamento ${id}`);
+      try {
+        const pdfBuffer = await this.estimatesPdfService.generateEstimatePdf(estimateData, tenant);
+        const key = `${tenantId}/estimates/${id}.pdf`;
+        const url = await this.storageService.upload(pdfBuffer, key);
+
+        await this.prisma.estimate.update({
+          where: { id, tenantId },
+          data: {
+            pdfUrl: url,
+            pdfStatus: 'generated',
+            pdfGeneratedAt: new Date(),
+          },
+        });
+
+        const message = this.buildWhatsAppMessage(estimate, url);
+        const whatsappLink = this.whatsappService.generateWhatsAppLink(client.phone, message);
+        return {
+          whatsappLink,
+          message,
+          pdfUrl: url,
+        };
+      } catch (error) {
+        this.logger.error(`Falha ao gerar PDF síncrono para orçamento ${id}`, error);
+        throw new BadRequestException('Erro ao gerar PDF. Tente novamente mais tarde.');
+      }
+    }
+
     await this.pdfQueue.add('generate-estimate-pdf', {
       tenantId,
       estimateId: id,
