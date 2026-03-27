@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
       await login(email, password);
@@ -25,9 +25,7 @@ export default function Login() {
         <h1 className="text-3xl font-bold text-neonBlue mb-6 text-center">Admin Login</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm text-gray-400 mb-1">
-              Email
-            </label>
+            <label htmlFor="email" className="block text-sm text-gray-400 mb-1">Email</label>
             <input
               type="email"
               id="email"
@@ -38,9 +36,7 @@ export default function Login() {
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm text-gray-400 mb-1">
-              Senha
-            </label>
+            <label htmlFor="password" className="block text-sm text-gray-400 mb-1">Senha</label>
             <input
               type="password"
               id="password"
@@ -57,10 +53,10 @@ export default function Login() {
           >
             Entrar
           </button>
+          <p className="text-center text-gray-400 mt-4">
+            Não tem conta? <Link to="/register" className="text-neonBlue hover:underline">Cadastre-se</Link>
+          </p>
         </form>
-        <p className="text-center text-gray-400 mt-4">
-          Não tem conta? <Link to="/register" className="text-neonBlue hover:underline">Cadastre-se</Link>
-        </p>
       </div>
     </div>
   );
