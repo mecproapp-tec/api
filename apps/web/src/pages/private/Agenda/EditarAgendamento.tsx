@@ -1,72 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiSave, FiArrowLeft } from "react-icons/fi";
-import {
-  getAppointmentById,
-  updateAppointment,
-  type Appointment,
-} from "../../../services/appointments";
-
-const BRAZIL_TIMEZONE = "America/Sao_Paulo";
-
-// Formata data para inputs (date + time)
-const formatBrazilDateTimeForInput = (date: Date) => {
-  const formatter = new Intl.DateTimeFormat("pt-BR", {
-    timeZone: BRAZIL_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(date);
-
-  const year = parts.find((p) => p.type === "year")?.value;
-  const month = parts.find((p) => p.type === "month")?.value;
-  const day = parts.find((p) => p.type === "day")?.value;
-  const hour = parts.find((p) => p.type === "hour")?.value;
-  const minute = parts.find((p) => p.type === "minute")?.value;
-
-  return {
-    date: `${year}-${month}-${day}`,
-    time: `${hour}:${minute}`,
-  };
-};
-
-// Hora atual no Brasil
-const getBrazilNow = (): Date => {
-  const now = new Date();
-
-  const formatter = new Intl.DateTimeFormat("pt-BR", {
-    timeZone: BRAZIL_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(now);
-
-  const year = parts.find((p) => p.type === "year")?.value;
-  const month = parts.find((p) => p.type === "month")?.value;
-  const day = parts.find((p) => p.type === "day")?.value;
-  const hour = parts.find((p) => p.type === "hour")?.value;
-  const minute = parts.find((p) => p.type === "minute")?.value;
-  const second = parts.find((p) => p.type === "second")?.value;
-
-  return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
-};
+import { getAppointmentById, updateAppointment } from "../../../services/appointments";
 
 export default function EditarAgendamento() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const [agendamento, setAgendamento] = useState<Appointment | null>(null);
+  const [agendamento, setAgendamento] = useState<any>(null);
   const [data, setData] = useState("");
   const [hora, setHora] = useState("");
   const [comentarios, setComentarios] = useState("");
@@ -84,11 +25,18 @@ export default function EditarAgendamento() {
       const app = await getAppointmentById(Number(id));
       setAgendamento(app);
 
+      // 🔥 backend já vem no horário do Brasil
       const dateObj = new Date(app.date);
-      const { date, time } = formatBrazilDateTimeForInput(dateObj);
 
-      setData(date);
-      setHora(time);
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
+
+      const hour = String(dateObj.getHours()).padStart(2, "0");
+      const minute = String(dateObj.getMinutes()).padStart(2, "0");
+
+      setData(`${year}-${month}-${day}`);
+      setHora(`${hour}:${minute}`);
       setComentarios(app.comment || "");
     } catch (err: any) {
       setError(err.response?.data?.message || "Erro ao carregar agendamento");
@@ -98,31 +46,19 @@ export default function EditarAgendamento() {
   };
 
   const handleSalvar = async () => {
-    if (saving || !agendamento) return;
+    if (saving) return;
+    if (!agendamento) return;
 
     if (!data || !hora) {
       alert("Preencha data e hora");
       return;
     }
 
-    const selected = new Date(`${data}T${hora}:00`);
-    const nowBrazil = getBrazilNow();
-
-    if (selected < nowBrazil) {
-      alert("Não é possível agendar no passado (horário de Brasília)");
-      return;
-    }
+    // 🔥 NÃO usa toISOString nem conversão
+    const dateTime = `${data}T${hora}:00`;
 
     setSaving(true);
-
     try {
-      // 🔥 CORREÇÃO IMPORTANTE (timezone)
-      const localDate = new Date(`${data}T${hora}:00`);
-
-      const dateTime = new Date(
-        localDate.getTime() - localDate.getTimezoneOffset() * 60000
-      ).toISOString();
-
       await updateAppointment(agendamento.id, {
         clientId: agendamento.clientId,
         date: dateTime,
@@ -130,12 +66,7 @@ export default function EditarAgendamento() {
       });
 
       alert("Agendamento atualizado com sucesso");
-
-      // ✅ CORREÇÃO DE NAVEGAÇÃO
-      navigate("/agendamento/ver/" + agendamento.id);
-      // ou:
-      // navigate("/agenda");
-
+      navigate("/agendamentos"); // ajuste sua rota se necessário
     } catch (err: any) {
       alert(err.response?.data?.message || "Erro ao atualizar agendamento");
     } finally {
@@ -144,11 +75,7 @@ export default function EditarAgendamento() {
   };
 
   if (loading) {
-    return (
-      <div style={styles.loadingContainer}>
-        Carregando agendamento...
-      </div>
-    );
+    return <div style={styles.loadingContainer}>Carregando agendamento...</div>;
   }
 
   if (error || !agendamento) {
@@ -169,7 +96,6 @@ export default function EditarAgendamento() {
           <button onClick={() => navigate(-1)} style={styles.backIcon}>
             <FiArrowLeft size={32} />
           </button>
-
           <h1 style={styles.title}>Editar Agendamento</h1>
         </div>
 

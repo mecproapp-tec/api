@@ -9,27 +9,31 @@ export function useWhatsApp() {
 
         console.log("📡 Chamando endpoint:", url);
 
-        const response = await api.post(url); // ✅ POST correto
+        const response = await api.post(url);
 
         console.log("✅ Resposta API:", response.data);
 
-        const { whatsappLink } = response.data;
+        const { whatsappLink, queued, message } = response.data;
 
-        if (!whatsappLink) {
-          throw new Error("Link do WhatsApp não retornado");
+        // 🔥 SE JÁ TEM LINK → abre WhatsApp
+        if (whatsappLink) {
+          window.open(whatsappLink, "_blank");
+          return;
         }
 
-        window.open(whatsappLink, "_blank");
+        // 🔥 SE ESTÁ EM FILA (BullMQ)
+        if (queued) {
+          alert("📄 PDF está sendo gerado. Tente novamente em alguns segundos.");
+          return;
+        }
+
+        throw new Error("Resposta inesperada do servidor");
       } catch (error: any) {
         console.error("❌ Erro completo:", error);
 
-        if (error.response) {
-          console.error("📛 Backend respondeu:", error.response.data);
-        }
-
         alert(
           error.response?.data?.message ||
-            "Erro ao enviar WhatsApp. Verifique o backend."
+          "Erro ao enviar WhatsApp. Verifique o backend."
         );
       }
     },
