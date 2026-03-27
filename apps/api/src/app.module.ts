@@ -20,7 +20,6 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { QueueModule } from './modules/common/queues/queue.module';
-// import { PdfModule } from './modules/pdf/pdf.module'; // COMENTADO TEMPORARIAMENTE
 import { StorageModule } from './modules/storage/storage.module';
 import { PdfProcessor } from './modules/common/queues/pdf-processor.service';
 
@@ -48,7 +47,6 @@ import { AppService } from './app.service';
     AppointmentsModule,
     ContactModule,
     WhatsappModule,
-    // PdfModule, // COMENTADO
     StorageModule,
   ],
   controllers: [AppController],
