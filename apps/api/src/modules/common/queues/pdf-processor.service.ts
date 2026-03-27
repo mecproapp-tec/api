@@ -28,7 +28,6 @@ export class PdfProcessor extends WorkerHost {
     try {
       let pdfBuffer: Buffer;
       if (entityType === 'estimate') {
-        // data contém o orçamento e o tenant (os serviços esperam esses objetos)
         pdfBuffer = await this.estimatesPdfService.generateEstimatePdf(data, data);
       } else if (entityType === 'invoice') {
         pdfBuffer = await this.invoicesPdfService.generateInvoicePdf(data, data);

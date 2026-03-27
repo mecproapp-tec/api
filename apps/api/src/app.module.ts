@@ -4,7 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bullmq';
 
 import { PrismaModule } from './shared/prisma/prisma.module';
-import { SharedModule } from './shared/shared.module'; // <-- import
+import { SharedModule } from './shared/shared.module';
 import { AuthModule } from './auth/auth.module';
 import { PaymentModule } from './payments/payment.module';
 import { WebhookModule } from './webhook/webhook.module';
@@ -31,12 +31,11 @@ import { AppService } from './app.service';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
-    BullModule.forRoot({
-      connection: { url: process.env.REDIS_URL },
-    }),
+    // Configuração única do BullMQ – delegada ao QueueModule
+    QueueModule,
     BullModule.registerQueue({ name: 'pdf' }),
     PrismaModule,
-    SharedModule, // <-- importado
+    SharedModule,
     AuthModule,
     PaymentModule,
     WebhookModule,
@@ -50,11 +49,10 @@ import { AppService } from './app.service';
     AppointmentsModule,
     ContactModule,
     WhatsappModule,
-    QueueModule,
     PdfModule,
     StorageModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PdfProcessor], // BrowserPoolService removido daqui, pois será fornecido pelo SharedModule
+  providers: [AppService, PdfProcessor],
 })
 export class AppModule {}

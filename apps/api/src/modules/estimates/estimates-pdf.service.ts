@@ -11,6 +11,7 @@ export class EstimatesPdfService {
   constructor(private readonly browserPool: BrowserPoolService) {}
 
   async generateEstimatePdf(estimate: any, tenant: any): Promise<Buffer> {
+    // ... restante do código (igual ao que você já tem, mas usando this.browserPool.getBrowser())
     const items = estimate.items.map(item => ({
       description: item.description,
       quantity: item.quantity,

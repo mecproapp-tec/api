@@ -18,5 +18,6 @@ import { ConfigModule } from '@nestjs/config';
   ],
   controllers: [InvoicesController, PublicInvoicesController],
   providers: [InvoicesService, InvoicesPdfService],
+  exports: [InvoicesPdfService], // <-- adicionado
 })
 export class InvoicesModule {}

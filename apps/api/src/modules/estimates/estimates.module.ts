@@ -16,5 +16,6 @@ import { StorageModule } from '../storage/storage.module';
   ],
   controllers: [EstimatesController, PublicEstimatesController],
   providers: [EstimatesService, EstimatesPdfService],
+  exports: [EstimatesPdfService], // <-- adicionado
 })
 export class EstimatesModule {}
