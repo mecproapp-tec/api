@@ -16,7 +16,7 @@ RUN npx prisma generate
 COPY . .
 RUN npm run build
 
-# Garantir que os templates .hbs estejam no dist (caso o Nest não os copie)
+# Garante que os templates .hbs estejam no dist (caso o Nest não os copie)
 RUN mkdir -p dist/modules/estimates dist/modules/invoices && \
     cp src/modules/estimates/*.hbs dist/modules/estimates/ 2>/dev/null || true && \
     cp src/modules/invoices/*.hbs dist/modules/invoices/ 2>/dev/null || true

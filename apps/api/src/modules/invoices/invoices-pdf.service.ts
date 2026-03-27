@@ -10,7 +10,28 @@ export class InvoicesPdfService {
 
   constructor(private readonly browserPool: BrowserPoolService) {}
 
+  private async getTemplateContent(): Promise<string> {
+    // Caminhos possíveis
+    const possiblePaths = [
+      path.join(__dirname, 'invoice-pdf.hbs'),
+      path.join(process.cwd(), 'src', 'modules', 'invoices', 'invoice-pdf.hbs'),
+      path.join(process.cwd(), 'dist', 'modules', 'invoices', 'invoice-pdf.hbs'),
+    ];
+
+    for (const p of possiblePaths) {
+      try {
+        const content = await readFile(p, 'utf8');
+        this.logger.log(`Template encontrado em: ${p}`);
+        return content;
+      } catch (e) {
+        // continua
+      }
+    }
+    throw new Error('Template invoice-pdf.hbs não encontrado em nenhum dos caminhos');
+  }
+
   async generateInvoicePdf(invoice: any, tenant: any): Promise<Buffer> {
+    this.logger.log(`Gerando PDF da fatura ${invoice.id}`);
     const client = invoice.client;
 
     const vehicleDetails =
@@ -28,10 +49,8 @@ export class InvoicesPdfService {
     const itemsWithTotal = invoice.items.map((item) => {
       const itemTotal = item.price * item.quantity;
       const iss = item.issPercent ? itemTotal * (item.issPercent / 100) : 0;
-
       subtotal += itemTotal;
       issTotal += iss;
-
       return {
         description: item.description,
         quantity: item.quantity,
@@ -42,8 +61,7 @@ export class InvoicesPdfService {
 
     const total = subtotal + issTotal;
 
-    const templatePath = path.join(__dirname, 'invoice-pdf.hbs');
-    const templateContent = await readFile(templatePath, 'utf8');
+    const templateContent = await this.getTemplateContent();
     const template = Handlebars.compile(templateContent);
 
     const data = {
@@ -72,19 +90,25 @@ export class InvoicesPdfService {
     };
 
     const html = template(data);
+    this.logger.debug(`HTML gerado, tamanho: ${html.length}`);
 
     const browser = await this.browserPool.getBrowser();
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
     const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
-
     await page.close();
+
+    this.logger.log(`PDF gerado com sucesso, tamanho: ${pdfBuffer.length} bytes`);
     return Buffer.from(pdfBuffer);
   }
 
   private getStatusText(status: string): string {
-    const map = { PAID: 'Paga', PENDING: 'Pendente', CANCELED: 'Cancelada' };
+    const map: Record<string, string> = {
+      PAID: 'Paga',
+      PENDING: 'Pendente',
+      CANCELED: 'Cancelada',
+    };
     return map[status] || 'Desconhecido';
   }
 }
