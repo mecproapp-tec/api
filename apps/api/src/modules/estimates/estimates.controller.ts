@@ -22,17 +22,19 @@ export class EstimatesController {
 
   @Post()
   create(@Body() data: { clientId: number; date: string; items: any[] }, @Req() req) {
+    // O método create não usa role, apenas tenantId
     return this.estimatesService.create(req.user.tenantId, data);
   }
 
   @Get()
   findAll(@Req() req) {
-    return this.estimatesService.findAll(req.user.tenantId);
+    // Passa o role para filtrar corretamente (se não for admin, filtra por tenant)
+    return this.estimatesService.findAll(req.user.tenantId, req.user.role);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req) {
-    return this.estimatesService.findOne(Number(id), req.user.tenantId);
+    return this.estimatesService.findOne(Number(id), req.user.tenantId, req.user.role);
   }
 
   @Put(':id')
@@ -41,17 +43,21 @@ export class EstimatesController {
     @Body() data: { clientId: number; date: string; items: any[]; status?: string },
     @Req() req,
   ) {
-    return this.estimatesService.update(Number(id), req.user.tenantId, data);
+    return this.estimatesService.update(Number(id), req.user.tenantId, data, req.user.role);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req) {
-    return this.estimatesService.remove(Number(id), req.user.tenantId);
+    return this.estimatesService.remove(Number(id), req.user.tenantId, req.user.role);
   }
 
   @Post(':id/share')
   async generateShareLink(@Param('id') id: string, @Req() req) {
-    const token = await this.estimatesService.generateShareToken(Number(id), req.user.tenantId);
+    const token = await this.estimatesService.generateShareToken(
+      Number(id),
+      req.user.tenantId,
+      req.user.role,
+    );
     const baseUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
     const url = `${baseUrl}/api/public/estimates/share/${token}`;
     return { url };
@@ -67,6 +73,7 @@ export class EstimatesController {
       Number(id),
       req.user.tenantId,
       body.workshopData,
+      req.user.role,
     );
   }
 }
