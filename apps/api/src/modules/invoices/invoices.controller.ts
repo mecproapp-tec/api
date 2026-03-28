@@ -53,7 +53,6 @@ export class InvoicesController {
       req.user.role,
     );
 
-    // Base da API (remove /api final se existir)
     const apiBase = (process.env.API_URL || process.env.APP_URL || 'https://api.mecpro.tec.br').replace(/\/api$/, '');
     const url = `${apiBase}/api/public/invoices/share/${token}`;
     return { url, token };
@@ -78,6 +77,8 @@ export class PublicInvoicesController {
       if (error.message === 'Token inválido' || error.message === 'Token expirado') {
         return res.status(404).send('Link inválido ou expirado');
       }
+      // Log do erro completo no console
+      console.error('Erro ao gerar PDF público:', error);
       return res.status(500).send('Erro ao gerar PDF');
     }
   }

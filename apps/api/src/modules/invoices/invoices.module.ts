@@ -7,7 +7,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { StorageModule } from '../storage/storage.module';
 import { InvoicesPdfService } from './invoices-pdf.service';
 import { ConfigModule } from '@nestjs/config';
-import { BrowserPoolService } from '../../shared/browser-pool.service'; // <-- importado
+import { BrowserPoolService } from '../../shared/browser-pool.service';
 
 @Module({
   imports: [
@@ -21,7 +21,7 @@ import { BrowserPoolService } from '../../shared/browser-pool.service'; // <-- i
   providers: [
     InvoicesService,
     InvoicesPdfService,
-    BrowserPoolService, // <-- adicionado
+    BrowserPoolService,
   ],
   exports: [InvoicesPdfService],
 })

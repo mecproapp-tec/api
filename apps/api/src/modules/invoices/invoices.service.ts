@@ -4,6 +4,7 @@ import {
   BadRequestException,
   UnauthorizedException,
   Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -217,29 +218,40 @@ export class InvoicesService {
   }
 
   async generateShareToken(id: number, tenantId: string, userRole?: string): Promise<string> {
-    const invoice = await this.findOne(id, tenantId, userRole);
+    this.logger.log(`generateShareToken chamado para fatura ${id}, tenantId ${tenantId}, role ${userRole}`);
+    try {
+      const invoice = await this.findOne(id, tenantId, userRole);
+      this.logger.log(`Fatura encontrada: id=${invoice.id}, shareToken atual=${invoice.shareToken}`);
 
-    if (
-      invoice.shareToken &&
-      invoice.shareTokenExpires &&
-      new Date() < invoice.shareTokenExpires
-    ) {
-      return invoice.shareToken;
+      if (
+        invoice.shareToken &&
+        invoice.shareTokenExpires &&
+        new Date() < invoice.shareTokenExpires
+      ) {
+        this.logger.log(`Token existente e válido: ${invoice.shareToken}`);
+        return invoice.shareToken;
+      }
+
+      const token = randomBytes(32).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      this.logger.log(`Gerando novo token: ${token}, expira em ${expiresAt.toISOString()}`);
+
+      await this.prisma.invoice.update({
+        where: { id },
+        data: {
+          shareToken: token,
+          shareTokenExpires: expiresAt,
+        },
+      });
+
+      this.logger.log(`Token salvo com sucesso para fatura ${id}`);
+      return token;
+    } catch (error) {
+      this.logger.error(`Erro ao gerar token para fatura ${id}:`, error.stack);
+      throw new InternalServerErrorException('Erro ao gerar link de compartilhamento');
     }
-
-    const token = randomBytes(32).toString('hex');
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    await this.prisma.invoice.update({
-      where: { id },
-      data: {
-        shareToken: token,
-        shareTokenExpires: expiresAt,
-      },
-    });
-
-    return token;
   }
 
   async validateShareToken(token: string) {
@@ -287,46 +299,69 @@ export class InvoicesService {
   }
 
   async getPdfByShareToken(token: string): Promise<Buffer> {
-    const invoice = await this.validateShareToken(token);
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: invoice.tenantId },
-      select: {
-        name: true,
-        documentNumber: true,
-        phone: true,
-        email: true,
-        logoUrl: true,
-      },
-    });
+    this.logger.log(`getPdfByShareToken chamado para token: ${token}`);
+    try {
+      const invoice = await this.validateShareToken(token);
+      this.logger.log(`Token válido para fatura ${invoice.id}`);
 
-    if (invoice.pdfUrl && invoice.pdfStatus === 'generated') {
-      try {
-        const response = await fetch(invoice.pdfUrl);
-        if (!response.ok) throw new Error('Erro ao buscar PDF do storage');
-        const arrayBuffer = await response.arrayBuffer();
-        return Buffer.from(arrayBuffer);
-      } catch (error) {
-        this.logger.error(`Erro ao buscar PDF do storage para fatura ${invoice.id}`, error);
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: invoice.tenantId },
+        select: {
+          name: true,
+          documentNumber: true,
+          phone: true,
+          email: true,
+          logoUrl: true,
+        },
+      });
+      this.logger.log(`Tenant encontrado: ${tenant?.name || 'não encontrado'}`);
+
+      // Verifica se o cliente e itens existem
+      if (!invoice.client || !invoice.client.id) {
+        throw new BadRequestException('Fatura sem cliente associado');
       }
+      if (!invoice.items || invoice.items.length === 0) {
+        throw new BadRequestException('Fatura sem itens');
+      }
+
+      // Se já tiver PDF no storage, retorna direto
+      if (invoice.pdfUrl && invoice.pdfStatus === 'generated') {
+        try {
+          const response = await fetch(invoice.pdfUrl);
+          if (response.ok) {
+            const arrayBuffer = await response.arrayBuffer();
+            this.logger.log(`PDF retornado do storage, tamanho: ${arrayBuffer.byteLength}`);
+            return Buffer.from(arrayBuffer);
+          }
+        } catch (error) {
+          this.logger.warn(`Erro ao buscar PDF do storage: ${error.message}. Gerando novo.`);
+        }
+      }
+
+      const pdfBuffer = await this.invoicesPdfService.generateInvoicePdf(invoice, tenant);
+      const key = `${invoice.tenantId}/invoices/${invoice.id}.pdf`;
+      const url = await this.storageService.upload(pdfBuffer, key);
+
+      await this.prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          pdfUrl: url,
+          pdfStatus: 'generated',
+          pdfGeneratedAt: new Date(),
+        },
+      });
+
+      this.logger.log(`PDF gerado e salvo, tamanho: ${pdfBuffer.length}`);
+      return pdfBuffer;
+    } catch (error) {
+      this.logger.error(`Erro em getPdfByShareToken:`, error.stack);
+      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Erro ao gerar PDF da fatura');
     }
-
-    const pdfBuffer = await this.invoicesPdfService.generateInvoicePdf(invoice, tenant);
-    const key = `${invoice.tenantId}/invoices/${invoice.id}.pdf`;
-    const url = await this.storageService.upload(pdfBuffer, key);
-
-    await this.prisma.invoice.update({
-      where: { id: invoice.id },
-      data: {
-        pdfUrl: url,
-        pdfStatus: 'generated',
-        pdfGeneratedAt: new Date(),
-      },
-    });
-
-    return pdfBuffer;
   }
 
-  // ================== MÉTODO CORRIGIDO ==================
   async sendViaWhatsApp(
     id: number,
     tenantId: string,
@@ -348,24 +383,19 @@ export class InvoicesService {
       throw new BadRequestException('Cliente sem telefone');
     }
 
-    // Gera token de compartilhamento (se necessário)
     let token = invoice.shareToken;
     if (!token || (invoice.shareTokenExpires && new Date() > invoice.shareTokenExpires)) {
       token = await this.generateShareToken(invoice.id, tenantId, userRole);
     }
 
-    // Constrói a URL pública da API (rota que retorna o PDF)
     const apiBase = (process.env.API_URL || process.env.APP_URL || 'https://api.mecpro.tec.br').replace(/\/api$/, '');
     const pdfUrl = `${apiBase}/api/public/invoices/share/${token}`;
 
     const message = this.buildWhatsAppMessage(invoice, pdfUrl);
     const whatsappLink = this.whatsappService.generateWhatsAppLink(client.phone, message);
 
-    // Se o PDF ainda não foi gerado, podemos enfileirar a geração (opcional)
-    // O método getPdfByShareToken já gera sob demanda, então não precisamos esperar.
     return { whatsappLink, message, pdfUrl };
   }
-  // ====================================================
 
   private buildWhatsAppMessage(invoice: any, pdfUrl: string): string {
     const client = invoice.client;
