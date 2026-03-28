@@ -13,6 +13,8 @@ export default function NovoCliente() {
     phone: "",
     vehicle: "",
     plate: "",
+    document: "", // <-- novo campo
+    address: "",  // <-- novo campo
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,6 +33,8 @@ export default function NovoCliente() {
         phone: cliente.phone,
         vehicle: cliente.vehicle,
         plate: cliente.plate,
+        document: cliente.document || "",
+        address: cliente.address || "",
       });
     } catch (err: any) {
       setError("Erro ao carregar cliente");
@@ -233,6 +237,58 @@ export default function NovoCliente() {
                   fontSize: "16px",
                   outline: "none",
                   textTransform: "uppercase",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "#00e5ff")}
+                onBlur={(e) => (e.target.style.borderColor = "#333")}
+                disabled={loading}
+              />
+            </div>
+
+            {/* NOVO CAMPO: Documento */}
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#a0a0a0" }}>
+                Documento (CPF/CNPJ/RG/CNH)
+              </label>
+              <input
+                type="text"
+                name="document"
+                value={formData.document}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  padding: "16px",
+                  borderRadius: "16px",
+                  border: "1px solid #333",
+                  background: "#1a1a1a",
+                  color: "#fff",
+                  fontSize: "16px",
+                  outline: "none",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "#00e5ff")}
+                onBlur={(e) => (e.target.style.borderColor = "#333")}
+                disabled={loading}
+              />
+            </div>
+
+            {/* NOVO CAMPO: Endereço */}
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#a0a0a0" }}>
+                Endereço
+              </label>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  padding: "16px",
+                  borderRadius: "16px",
+                  border: "1px solid #333",
+                  background: "#1a1a1a",
+                  color: "#fff",
+                  fontSize: "16px",
+                  outline: "none",
                 }}
                 onFocus={(e) => (e.target.style.borderColor = "#00e5ff")}
                 onBlur={(e) => (e.target.style.borderColor = "#333")}
