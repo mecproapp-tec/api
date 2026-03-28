@@ -195,7 +195,7 @@ model Appointment {
   comment       String?
   date          DateTime
   id            Int            @id @default(autoincrement())
-  client        Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client        Client         @relation(fields: [clientId], references: [id])
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   notifications Notification[]
 
@@ -216,14 +216,13 @@ model Estimate {
   date              DateTime
   shareToken        String?        @unique
   shareTokenExpires DateTime?
-  client            Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  pdfGeneratedAt    DateTime?      @map("pdf_generated_at")
+  pdfStatus         String?        @default("pending") @map("pdf_status")
+  pdfUrl            String?        @map("pdf_url")
+  client            Client         @relation(fields: [clientId], references: [id])
   tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items             EstimateItem[]
   invoice           Invoice?
-
-  pdfUrl            String?        @map("pdf_url") @db.Text
-  pdfStatus         String?        @default("pending") @map("pdf_status")
-  pdfGeneratedAt    DateTime?      @map("pdf_generated_at")
 
   @@index([tenantId])
   @@index([clientId])
@@ -274,14 +273,13 @@ model Invoice {
   estimateId        Int?          @unique
   shareToken        String?       @unique
   shareTokenExpires DateTime?
-  client            Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  pdfGeneratedAt    DateTime?     @map("pdf_generated_at")
+  pdfStatus         String?       @default("pending") @map("pdf_status")
+  pdfUrl            String?       @map("pdf_url")
+  client            Client        @relation(fields: [clientId], references: [id])
   estimate          Estimate?     @relation(fields: [estimateId], references: [id])
   tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items             InvoiceItem[]
-
-  pdfUrl            String?        @map("pdf_url") @db.Text
-  pdfStatus         String?        @default("pending") @map("pdf_status")
-  pdfGeneratedAt    DateTime?      @map("pdf_generated_at")
 
   @@index([tenantId])
   @@index([clientId])
