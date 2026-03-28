@@ -19,37 +19,43 @@ export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * 🔥 Converte data recebida (frontend) para UTC (salvar no banco)
-   * A string é interpretada como horário local do Brasil.
+   * Converte a string do frontend para UTC, assumindo que ela representa
+   * um horário no fuso do Brasil (America/Sao_Paulo).
    */
   private convertToUTC(dateString: string): Date {
-    if (!dayjs(dateString).isValid()) {
+    const local = dayjs(dateString, { local: true });
+    if (!local.isValid()) {
       throw new BadRequestException('Data inválida');
     }
-
-    // Interpreta a string como se estivesse no fuso horário do Brasil
-    const brazilTime = dayjs.tz(dateString, BRAZIL_TZ);
-    // Converte para UTC (timestamp absoluto)
+    const brazilTime = local.tz(BRAZIL_TZ);
     return brazilTime.utc().toDate();
   }
 
   /**
-   * 🔥 Converte data do banco (UTC) para horário do Brasil
+   * Converte data do banco (UTC) para string no fuso Brasil.
    */
   private convertToBrazil(date: Date): string {
-    return dayjs(date)
-      .tz(BRAZIL_TZ)
-      .format(); // ISO string já corrigida
+    return dayjs(date).tz(BRAZIL_TZ).format();
   }
 
   /**
-   * 📌 CREATE
-   * POST /appointments
+   * Verifica se a data (no fuso Brasil) é futura.
    */
+  private isFuture(dateString: string): boolean {
+    const local = dayjs(dateString, { local: true });
+    const brazilTime = local.tz(BRAZIL_TZ);
+    const nowBrazil = dayjs().tz(BRAZIL_TZ);
+    return brazilTime.isAfter(nowBrazil);
+  }
+
   async create(
     tenantId: string,
     data: { clientId: number; date: string; comment?: string },
   ) {
+    if (!this.isFuture(data.date)) {
+      throw new BadRequestException('Não é possível agendar no passado');
+    }
+
     const appointmentDate = this.convertToUTC(data.date);
 
     const appointment = await this.prisma.appointment.create({
@@ -68,13 +74,8 @@ export class AppointmentsService {
     };
   }
 
-  /**
-   * 📌 LISTAR
-   * GET /appointments
-   */
   async findAll(tenantId: string, userRole?: string) {
     const where: any = {};
-
     if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
       where.tenantId = tenantId;
     }
@@ -91,13 +92,8 @@ export class AppointmentsService {
     }));
   }
 
-  /**
-   * 📌 BUSCAR UM
-   * GET /appointments/:id
-   */
   async findOne(id: number, tenantId: string, userRole?: string) {
     const where: any = { id };
-
     if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
       where.tenantId = tenantId;
     }
@@ -117,10 +113,6 @@ export class AppointmentsService {
     };
   }
 
-  /**
-   * 📌 UPDATE
-   * PUT /appointments/:id
-   */
   async update(
     id: number,
     tenantId: string,
@@ -128,6 +120,10 @@ export class AppointmentsService {
     userRole?: string,
   ) {
     await this.findOne(id, tenantId, userRole);
+
+    if (!this.isFuture(data.date)) {
+      throw new BadRequestException('Não é possível agendar no passado');
+    }
 
     const appointmentDate = this.convertToUTC(data.date);
 
@@ -147,17 +143,9 @@ export class AppointmentsService {
     };
   }
 
-  /**
-   * 📌 DELETE
-   * DELETE /appointments/:id
-   */
   async remove(id: number, tenantId: string, userRole?: string) {
     await this.findOne(id, tenantId, userRole);
-
-    await this.prisma.appointment.delete({
-      where: { id },
-    });
-
+    await this.prisma.appointment.delete({ where: { id } });
     return { message: 'Agendamento removido com sucesso' };
   }
 }
