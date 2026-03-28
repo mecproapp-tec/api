@@ -29,41 +29,54 @@ async function bootstrap() {
     }),
   );
 
+  // Lista de origens permitidas (pode vir de variável de ambiente)
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map(o => o.trim())
     .filter(Boolean);
 
+  // Em produção, defina as origens explicitamente
+  // Exemplo: https://www.mecpro.tec.br,https://mecpro.tec.br
+  // Se ALLOWED_ORIGINS não estiver definido, usamos um array padrão
+  const defaultOrigins = [
+    'https://www.mecpro.tec.br',
+    'https://mecpro.tec.br',
+    'http://localhost:5173', // desenvolvimento
+    'http://localhost:3001', // desenvolvimento admin
+  ];
+
+  const origins = allowedOrigins.length > 0 ? allowedOrigins : defaultOrigins;
+
   app.enableCors({
     origin: (origin, callback) => {
-      // requests sem origin (health checks, curl, etc)
+      // Permitir requisições sem origin (ex: ferramentas de saúde, curl)
       if (!origin) return callback(null, true);
 
-      const isAllowed =
-        allowedOrigins.includes(origin) ||
-        origin.includes('vercel.app') ||
-        origin.includes('mecpro.tec.br') ||
-        origin.includes('localhost');
+      // Verifica se a origem está na lista de permitidas
+      const isAllowed = origins.some(allowed => {
+        // Permite correspondência exata ou se a origem contém o domínio (ex: subdomínios)
+        // Para segurança, é melhor usar correspondência exata
+        return allowed === origin || origin.endsWith(`.${allowed.replace('https://', '')}`);
+      });
 
-      if (isAllowed) {
+      // Também permite localhost para desenvolvimento
+      const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+
+      if (isAllowed || isLocalhost) {
         return callback(null, true);
       }
 
-      // 🔥 fallback: NÃO BLOQUEIA PRODUÇÃO
-      console.warn('⚠️ CORS não listado, liberado por fallback:', origin);
-      return callback(null, true);
+      // Em produção, rejeitamos origens não autorizadas
+      console.warn(`❌ CORS bloqueado para origem: ${origin}`);
+      callback(new Error(`Origem não permitida pelo CORS: ${origin}`));
     },
-
-    credentials: false,
-
+    credentials: true, // ESSENCIAL: permite envio de cookies/cabeçalhos de autenticação
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-
     allowedHeaders: [
       'Content-Type',
       'Authorization',
       'ngrok-skip-browser-warning',
     ],
-
     optionsSuccessStatus: 200,
   });
 
@@ -77,6 +90,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  // Endpoint de saúde sem prefixo /api para facilitar monitoramento
   const httpAdapter = app.getHttpAdapter();
   httpAdapter.get('/health', (req, res) => {
     res.status(200).json({
