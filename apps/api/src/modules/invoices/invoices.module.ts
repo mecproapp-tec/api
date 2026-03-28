@@ -7,6 +7,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { StorageModule } from '../storage/storage.module';
 import { InvoicesPdfService } from './invoices-pdf.service';
 import { ConfigModule } from '@nestjs/config';
+import { BrowserPoolService } from '../../shared/browser-pool.service'; // <-- importado
 
 @Module({
   imports: [
@@ -17,7 +18,11 @@ import { ConfigModule } from '@nestjs/config';
     BullModule.registerQueue({ name: 'pdf' }),
   ],
   controllers: [InvoicesController, PublicInvoicesController],
-  providers: [InvoicesService, InvoicesPdfService],
-  exports: [InvoicesPdfService], // <-- adicionado
+  providers: [
+    InvoicesService,
+    InvoicesPdfService,
+    BrowserPoolService, // <-- adicionado
+  ],
+  exports: [InvoicesPdfService],
 })
 export class InvoicesModule {}
