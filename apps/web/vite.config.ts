@@ -10,11 +10,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
-
+  optimizeDeps: {
+    include: ["@tanstack/react-query"], // força o pré-processamento
+  },
   build: {
     outDir: "dist",
   },
-
   preview: {
     host: true,
     port: 8080,
