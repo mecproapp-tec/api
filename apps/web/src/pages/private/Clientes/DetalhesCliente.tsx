@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FiArrowLeft, FiFileText, FiDollarSign, FiClock, FiEye, FiTrash2 } from "react-icons/fi";
+import { FiArrowLeft, FiFileText, FiDollarSign, FiClock, FiEye, FiEyeOff, FiTrash2 } from "react-icons/fi";
 
 import { getClientById, type Client, getVehicleDisplay } from "../../../services/clients";
 import { getEstimates, type Estimate } from "../../../services/Estimates";
 import { getInvoices, type Invoice } from "../../../services/invoices";
 import { getAppointments, deleteAppointment, type Appointment } from "../../../services/appointments";
 
-// Estilos – movidos para o topo
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     background: "linear-gradient(145deg, #0a0a0a 0%, #000000 100%)",
@@ -76,6 +75,10 @@ const styles: { [key: string]: React.CSSProperties } = {
   value: {
     fontSize: "1.2rem",
     color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    flexWrap: "wrap",
   },
   observations: {
     marginTop: "32px",
@@ -173,6 +176,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: "center",
     color: "#ff4444",
   },
+  eyeButton: {
+    background: "transparent",
+    border: "none",
+    color: "#00e5ff",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "4px",
+    borderRadius: "8px",
+    transition: "all 0.2s",
+  },
 };
 
 function calculateTotalWithIss(items?: Invoice["items"]): number {
@@ -182,6 +197,24 @@ function calculateTotalWithIss(items?: Invoice["items"]): number {
     const iss = item.issPercent ? itemTotal * (item.issPercent / 100) : 0;
     return acc + itemTotal + iss;
   }, 0);
+}
+
+function maskDocumentNumber(type: string, number: string): string {
+  if (!number) return "";
+  const digits = number.replace(/\D/g, "");
+  switch (type) {
+    case "CPF":
+      if (digits.length === 11) {
+        return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "***.***.***-**");
+      }
+      return "•".repeat(digits.length);
+    case "CNH":
+      return "•".repeat(digits.length);
+    case "RG":
+      return "•".repeat(digits.length);
+    default:
+      return "•".repeat(digits.length);
+  }
 }
 
 export default function DetalhesCliente() {
@@ -195,6 +228,7 @@ export default function DetalhesCliente() {
   const [observacoesInput, setObservacoesInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showDocumentNumber, setShowDocumentNumber] = useState(false);
 
   useEffect(() => {
     const clientId = Number(id);
@@ -246,6 +280,33 @@ export default function DetalhesCliente() {
     if (!cliente) return;
     localStorage.setItem(`cliente_obs_${cliente.id}`, observacoesInput);
     alert("Observações salvas com sucesso!");
+  };
+
+  const renderDocument = () => {
+    if (!cliente?.document) return <span style={styles.value}>Não informado</span>;
+
+    const parts = cliente.document.split(" ");
+    if (parts.length < 2) return <span style={styles.value}>{cliente.document}</span>;
+
+    const docType = parts[0];
+    const docNumberRaw = parts.slice(1).join(" ");
+    const masked = maskDocumentNumber(docType, docNumberRaw);
+    const displayNumber = showDocumentNumber ? docNumberRaw : masked;
+
+    return (
+      <div style={styles.value}>
+        <span>
+          {docType} {displayNumber}
+        </span>
+        <button
+          onClick={() => setShowDocumentNumber(!showDocumentNumber)}
+          style={styles.eyeButton}
+          title={showDocumentNumber ? "Ocultar número" : "Mostrar número"}
+        >
+          {showDocumentNumber ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+        </button>
+      </div>
+    );
   };
 
   const handlePDFOrcamento = (orcamento: Estimate) => {
@@ -304,7 +365,7 @@ export default function DetalhesCliente() {
                   <th class="valor">Valor (R$)</th>
                   <th class="valor">ISS (%)</th>
                   <th class="valor">Total c/ ISS (R$)</th>
-                 </tr>
+                </tr>
               </thead>
               <tbody>
                 ${orcamento.items.map(item => {
@@ -316,7 +377,7 @@ export default function DetalhesCliente() {
                       <td class="valor">${itemTotal.toFixed(2)}</td>
                       <td class="valor">${item.issPercent ? item.issPercent + '%' : '-'}</td>
                       <td class="valor">${(itemTotal + iss).toFixed(2)}</td>
-                     </tr>
+                    </tr>
                   `;
                 }).join("")}
               </tbody>
@@ -396,7 +457,7 @@ export default function DetalhesCliente() {
                   <th class="valor">Preço Unit.</th>
                   <th class="valor">ISS (%)</th>
                   <th class="valor">Total c/ ISS</th>
-                 </tr>
+                </tr>
               </thead>
               <tbody>
                 ${fatura.items.map(item => {
@@ -410,7 +471,7 @@ export default function DetalhesCliente() {
                       <td class="valor">${(item.price || 0).toFixed(2)}</td>
                       <td class="valor">${item.issPercent ? item.issPercent + '%' : '-'}</td>
                       <td class="valor">${totalItem.toFixed(2)}</td>
-                     </tr>
+                    </tr>
                   `;
                 }).join("")}
               </tbody>
@@ -506,7 +567,6 @@ export default function DetalhesCliente() {
           <h1 style={styles.title}>Detalhes do Cliente</h1>
         </div>
 
-        {/* Card do cliente */}
         <div style={styles.card}>
           <h2 style={styles.clientName}>{cliente.name}</h2>
           <div style={styles.infoGrid}>
@@ -524,7 +584,7 @@ export default function DetalhesCliente() {
             </div>
             <div>
               <span style={styles.label}>Documento</span>
-              <span style={styles.value}>{cliente.document || "Não informado"}</span>
+              {renderDocument()}
             </div>
             <div>
               <span style={styles.label}>Endereço</span>
@@ -532,7 +592,6 @@ export default function DetalhesCliente() {
             </div>
           </div>
 
-          {/* Observações */}
           <div style={styles.observations}>
             <label style={styles.label}>Observações sobre o cliente</label>
             <textarea
@@ -548,9 +607,7 @@ export default function DetalhesCliente() {
           </div>
         </div>
 
-        {/* Seções de histórico */}
         <div style={styles.sections}>
-          {/* Orçamentos */}
           <section>
             <h3 style={styles.sectionTitle}>
               <FiFileText style={styles.icon} /> Orçamentos ({orcamentos.length})
@@ -564,12 +621,12 @@ export default function DetalhesCliente() {
                       <th>Total</th>
                       <th>Status</th>
                       <th>Ações</th>
-                     </tr>
+                    </tr>
                   </thead>
                   <tbody>
                     {orcamentos.map((orc, idx) => (
                       <tr key={orc.id} style={{ background: idx % 2 === 0 ? "#0f0f0f" : "#1a1a1a" }}>
-                         <td>{formatDate(orc.date)}</td>
+                        <td>{formatDate(orc.date)}</td>
                         <td style={{ color: "#00e5ff", fontWeight: "600" }}>R$ {orc.total.toFixed(2)}</td>
                         <td>{getStatusBadge(orc.status)}</td>
                         <td style={{ textAlign: "center" }}>
@@ -587,7 +644,6 @@ export default function DetalhesCliente() {
             )}
           </section>
 
-          {/* Faturas */}
           <section>
             <h3 style={styles.sectionTitle}>
               <FiDollarSign style={styles.icon} /> Faturas ({faturas.length})
@@ -602,13 +658,13 @@ export default function DetalhesCliente() {
                       <th>Total</th>
                       <th>Status</th>
                       <th>Ações</th>
-                     </tr>
+                    </tr>
                   </thead>
                   <tbody>
                     {faturas.map((fat, idx) => (
                       <tr key={fat.id} style={{ background: idx % 2 === 0 ? "#0f0f0f" : "#1a1a1a" }}>
-                         <td>{formatDate(fat.createdAt)}</td>
-                         <td>{fat.number}</td>
+                        <td>{formatDate(fat.createdAt)}</td>
+                        <td>{fat.number}</td>
                         <td style={{ color: "#00e5ff", fontWeight: "600" }}>R$ {fat.total.toFixed(2)}</td>
                         <td>{getStatusBadge(fat.status)}</td>
                         <td style={{ textAlign: "center" }}>
@@ -626,7 +682,6 @@ export default function DetalhesCliente() {
             )}
           </section>
 
-          {/* Agendamentos */}
           <section>
             <h3 style={styles.sectionTitle}>
               <FiClock style={styles.icon} /> Agendamentos ({agendamentos.length})
@@ -640,7 +695,7 @@ export default function DetalhesCliente() {
                       <th>Hora</th>
                       <th>Observações</th>
                       <th>Ações</th>
-                     </tr>
+                    </tr>
                   </thead>
                   <tbody>
                     {agendamentos.map((agd, idx) => {
@@ -649,8 +704,8 @@ export default function DetalhesCliente() {
                       const horaStr = data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
                       return (
                         <tr key={agd.id} style={{ background: idx % 2 === 0 ? "#0f0f0f" : "#1a1a1a" }}>
-                           <td>{dataStr}</td>
-                           <td>{horaStr}</td>
+                          <td>{dataStr}</td>
+                          <td>{horaStr}</td>
                           <td style={{ color: "#b0b0b0" }}>{agd.comment || "-"}</td>
                           <td style={{ textAlign: "center" }}>
                             <button onClick={() => handleDeleteAgendamento(agd.id)} style={{ ...styles.actionButton, color: "#ff5555", borderColor: "#ff555530" }} title="Excluir">

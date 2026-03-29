@@ -57,6 +57,21 @@ export class InvoicesController {
     const url = `${apiBase}/api/public/invoices/share/${token}`;
     return { url, token };
   }
+
+  // 🆕 Endpoint para enviar fatura via WhatsApp
+  @Post(':id/send-whatsapp')
+  async sendViaWhatsApp(
+    @Param('id') id: string,
+    @Body() body: { workshopData?: any },
+    @Req() req,
+  ) {
+    return this.invoicesService.sendViaWhatsApp(
+      Number(id),
+      req.user.tenantId,
+      body.workshopData,
+      req.user.role,
+    );
+  }
 }
 
 @Controller('public/invoices')
@@ -77,7 +92,6 @@ export class PublicInvoicesController {
       if (error.message === 'Token inválido' || error.message === 'Token expirado') {
         return res.status(404).send('Link inválido ou expirado');
       }
-      // Log do erro completo no console
       console.error('Erro ao gerar PDF público:', error);
       return res.status(500).send('Erro ao gerar PDF');
     }

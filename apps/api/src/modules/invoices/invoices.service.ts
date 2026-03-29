@@ -323,7 +323,6 @@ export class InvoicesService {
         throw new BadRequestException('Fatura sem itens');
       }
 
-      // Se já tiver PDF salvo localmente, retorna diretamente
       if (invoice.pdfUrl && invoice.pdfStatus === 'generated') {
         try {
           const pdfBuffer = await this.storageService.get(invoice.pdfUrl);
@@ -334,12 +333,10 @@ export class InvoicesService {
         }
       }
 
-      // Gera o PDF
       const pdfBuffer = await this.invoicesPdfService.generateInvoicePdf(invoice, tenant);
       const key = `${invoice.tenantId}/invoices/${invoice.id}.pdf`;
       const savedKey = await this.storageService.upload(pdfBuffer, key);
 
-      // Salva a chave (caminho) no banco
       await this.prisma.invoice.update({
         where: { id: invoice.id },
         data: {
@@ -360,6 +357,7 @@ export class InvoicesService {
     }
   }
 
+  // 🆕 Método para enviar fatura via WhatsApp (similar ao orçamento)
   async sendViaWhatsApp(
     id: number,
     tenantId: string,
@@ -378,9 +376,10 @@ export class InvoicesService {
     const client = invoice.client;
 
     if (!client.phone) {
-      throw new BadRequestException('Cliente sem telefone');
+      throw new BadRequestException('Cliente não possui telefone cadastrado');
     }
 
+    // Gera token de compartilhamento (se necessário)
     let token = invoice.shareToken;
     if (!token || (invoice.shareTokenExpires && new Date() > invoice.shareTokenExpires)) {
       token = await this.generateShareToken(invoice.id, tenantId, userRole);
@@ -389,23 +388,27 @@ export class InvoicesService {
     const apiBase = (process.env.API_URL || process.env.APP_URL || 'https://api.mecpro.tec.br').replace(/\/api$/, '');
     const pdfUrl = `${apiBase}/api/public/invoices/share/${token}`;
 
+    // Mensagem com documento e endereço
     const message = this.buildWhatsAppMessage(invoice, pdfUrl);
     const whatsappLink = this.whatsappService.generateWhatsAppLink(client.phone, message);
 
     return { whatsappLink, message, pdfUrl };
   }
 
+  // 🟢 Mensagem do WhatsApp agora inclui documento e endereço do cliente
   private buildWhatsAppMessage(invoice: any, pdfUrl: string): string {
     const client = invoice.client;
-    return `Olá ${client.name}!
+    const documentText = client.document ? `📄 Documento: ${client.document}` : '';
+    const addressText = client.address ? `📍 Endereço: ${client.address}` : '';
 
-Sua fatura ${invoice.number} está pronta ✅
+    let message = `Olá ${client.name}!`;
 
-🔗 Acesse aqui:
-${pdfUrl}
+    if (documentText) message += `\n${documentText}`;
+    if (addressText) message += `\n${addressText}`;
 
-💰 Total: R$ ${invoice.total.toFixed(2)}
-📌 Status: ${this.getStatusText(invoice.status)}`;
+    message += `\n\nSua fatura ${invoice.number} está pronta ✅\n\n🔗 Acesse aqui:\n${pdfUrl}\n\n💰 Total: R$ ${invoice.total.toFixed(2)}\n📌 Status: ${this.getStatusText(invoice.status)}`;
+
+    return message;
   }
 
   private getStatusText(status: string): string {

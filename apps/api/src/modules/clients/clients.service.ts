@@ -6,30 +6,40 @@ import { Client } from '@prisma/client';
 export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(tenantId: string, data: {
-    name: string;
-    phone: string;
-    vehicle: string;
-    plate: string;
-  }): Promise<Client> {
+  async create(
+    tenantId: string | number,
+    data: {
+      name: string;
+      phone: string;
+      vehicle: string;
+      plate: string;
+      document?: string;
+      address?: string;
+    },
+  ): Promise<Client> {
+    const tenantIdStr = String(tenantId);
     return this.prisma.client.create({
       data: {
-        tenantId,
+        tenantId: tenantIdStr,
         name: data.name,
         phone: data.phone,
         vehicle: data.vehicle,
         plate: data.plate,
+        document: data.document ?? null,
+        address: data.address ?? null,
       },
     });
   }
 
-  async findAll(tenantId: string, userRole?: string): Promise<Partial<Client>[]> {
+  async findAll(
+    tenantId: string | number,
+    userRole?: string,
+  ): Promise<Partial<Client>[]> {
+    const tenantIdStr = String(tenantId);
     const where: any = {};
-    // Se não for administrador, filtra pelo tenantId
     if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
-      where.tenantId = tenantId;
+      where.tenantId = tenantIdStr;
     }
-
     return this.prisma.client.findMany({
       where,
       select: {
@@ -47,13 +57,16 @@ export class ClientsService {
     });
   }
 
-  async findOne(id: number, tenantId: string, userRole?: string): Promise<Partial<Client>> {
+  async findOne(
+    id: number,
+    tenantId: string | number,
+    userRole?: string,
+  ): Promise<Partial<Client>> {
+    const tenantIdStr = String(tenantId);
     const where: any = { id };
-    // Se não for administrador, filtra também pelo tenantId
     if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
-      where.tenantId = tenantId;
+      where.tenantId = tenantIdStr;
     }
-
     const client = await this.prisma.client.findFirst({
       where,
       select: {
@@ -74,16 +87,31 @@ export class ClientsService {
     return client;
   }
 
-  async update(id: number, tenantId: string, data: Partial<Client>, userRole?: string): Promise<Client> {
-    // Verifica se o cliente existe e pertence ao tenant (ou é admin)
+  async update(
+    id: number,
+    tenantId: string | number,
+    data: Partial<Omit<Client, 'id' | 'tenantId' | 'createdAt' | 'updatedAt'>>,
+    userRole?: string,
+  ): Promise<Client> {
     await this.findOne(id, tenantId, userRole);
     return this.prisma.client.update({
       where: { id },
-      data,
+      data: {
+        name: data.name,
+        phone: data.phone,
+        vehicle: data.vehicle,
+        plate: data.plate,
+        document: data.document,
+        address: data.address,
+      },
     });
   }
 
-  async remove(id: number, tenantId: string, userRole?: string): Promise<{ message: string }> {
+  async remove(
+    id: number,
+    tenantId: string | number,
+    userRole?: string,
+  ): Promise<{ message: string }> {
     await this.findOne(id, tenantId, userRole);
     await this.prisma.client.delete({ where: { id } });
     return { message: 'Cliente removido com sucesso' };

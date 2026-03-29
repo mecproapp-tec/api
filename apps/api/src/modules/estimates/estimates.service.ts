@@ -378,18 +378,19 @@ export class EstimatesService {
     };
   }
 
+  // 🟢 Mensagem do WhatsApp agora inclui documento e endereço do cliente
   private buildWhatsAppMessage(estimate: any, pdfUrl: string): string {
     const client = estimate.client;
-    return `Olá ${client.name}!
+    const documentText = client.document ? `📄 Documento: ${client.document}` : '';
+    const addressText = client.address ? `📍 Endereço: ${client.address}` : '';
 
-Seu orçamento está pronto ✅
+    let message = `Olá ${client.name}!`;
 
-🔗 Acesse aqui:
-${pdfUrl}
+    if (documentText) message += `\n${documentText}`;
+    if (addressText) message += `\n${addressText}`;
 
-👤 Cliente: ${client.name}
-🚗 Veículo: ${client.vehicle || 'Não informado'}
-💰 Total: R$ ${estimate.total.toFixed(2)}
-📌 Status: ${estimate.status === 'DRAFT' ? 'Pendente' : estimate.status === 'APPROVED' ? 'Aceito' : 'Convertido'}`;
+    message += `\n\nSeu orçamento está pronto ✅\n\n🔗 Acesse aqui:\n${pdfUrl}\n\n🚗 Veículo: ${client.vehicle || 'Não informado'}\n💰 Total: R$ ${estimate.total.toFixed(2)}\n📌 Status: ${estimate.status === 'DRAFT' ? 'Pendente' : estimate.status === 'APPROVED' ? 'Aceito' : 'Convertido'}`;
+
+    return message;
   }
 }

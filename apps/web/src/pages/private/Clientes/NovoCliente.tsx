@@ -17,7 +17,6 @@ export default function NovoCliente() {
     address: "",
   });
 
-  // Estados auxiliares para controle do documento (tipo + número)
   const [docType, setDocType] = useState<"CPF" | "RG" | "CNH">("CPF");
   const [docNumber, setDocNumber] = useState("");
   const [docError, setDocError] = useState("");
@@ -43,7 +42,6 @@ export default function NovoCliente() {
     return true;
   };
 
-  // Sincroniza o campo composto "document" com os estados separados
   useEffect(() => {
     if (docNumber) {
       setFormData(prev => ({ ...prev, document: `${docType} ${docNumber}` }));
@@ -68,7 +66,6 @@ export default function NovoCliente() {
         address: cliente.address || "",
       });
 
-      // Extrai tipo e número do campo composto
       if (cliente.document) {
         const parts = cliente.document.split(" ");
         if (parts.length >= 2) {
@@ -145,7 +142,6 @@ export default function NovoCliente() {
       }}
     >
       <div style={{ maxWidth: "600px", margin: "0 auto" }}>
-        {/* Cabeçalho */}
         <div style={{ display: "flex", alignItems: "center", marginBottom: "40px" }}>
           <button
             onClick={() => navigate("/clientes")}
@@ -184,7 +180,6 @@ export default function NovoCliente() {
           </h1>
         </div>
 
-        {/* Formulário */}
         <div
           style={{
             background: "#111",
@@ -209,7 +204,6 @@ export default function NovoCliente() {
           )}
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {/* Nome */}
             <div>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#a0a0a0" }}>
                 Nome
@@ -236,7 +230,6 @@ export default function NovoCliente() {
               />
             </div>
 
-            {/* Telefone */}
             <div>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#a0a0a0" }}>
                 Telefone
@@ -263,7 +256,6 @@ export default function NovoCliente() {
               />
             </div>
 
-            {/* Veículo */}
             <div>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#a0a0a0" }}>
                 Veículo
@@ -290,7 +282,6 @@ export default function NovoCliente() {
               />
             </div>
 
-            {/* Placa */}
             <div>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#a0a0a0" }}>
                 Placa
@@ -318,7 +309,6 @@ export default function NovoCliente() {
               />
             </div>
 
-            {/* Documento */}
             <div>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#a0a0a0" }}>
                 Documento
@@ -377,7 +367,6 @@ export default function NovoCliente() {
               )}
             </div>
 
-            {/* Endereço */}
             <div>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#a0a0a0" }}>
                 Endereço
