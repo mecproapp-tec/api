@@ -74,13 +74,28 @@ export class TenantsService {
     return tenant;
   }
 
-  async update(id: string, data: any, userRole?: string) {
-    if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
-      throw new Error('Acesso negado');
+  async update(id: string, data: any) {
+    // Mapeia os campos do frontend para os campos do Prisma
+    const updateData: any = {};
+
+    if (data.nome !== undefined) updateData.name = data.nome;
+    if (data.documento !== undefined) updateData.documentNumber = data.documento;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.telefone !== undefined) updateData.phone = data.telefone;
+    if (data.logo !== undefined) updateData.logoUrl = data.logo;
+
+    // Combina endereço e número
+    if (data.endereco !== undefined || data.numero !== undefined) {
+      const endereco = data.endereco || '';
+      const numero = data.numero || '';
+      updateData.address = `${endereco} ${numero}`.trim();
     }
+
+    // Se houver outros campos que precisam ser salvos diretamente, adicione aqui
+
     return this.prisma.tenant.update({
       where: { id },
-      data,
+      data: updateData,
       select: {
         id: true,
         name: true,
@@ -88,6 +103,7 @@ export class TenantsService {
         email: true,
         phone: true,
         logoUrl: true,
+        address: true,
         updatedAt: true,
       },
     });
