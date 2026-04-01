@@ -18,15 +18,8 @@ const VerAgendamento: React.FC = () => {
     enabled: !!id,
   });
 
-  // 🔙 FUNÇÃO INTELIGENTE DE VOLTAR
   const handleBack = () => {
-    // Se tiver histórico, volta
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      // fallback seguro
-      navigate('/clientes');
-    }
+    navigate('/clientes');
   };
 
   if (isLoading) {
