@@ -338,11 +338,9 @@ export class EstimatesService {
       token = await this.generateShareToken(estimate.id, tenantId, userRole);
     }
 
-    const apiBase = process.env.API_URL || 'https://api.mecpro.tec.br';
-    const frontendUrl = this.configService.get<string>('APP_URL') || 'https://mecpro.tec.br';
-    const pdfUrl = `${frontendUrl}/orcamento/${token}`;
+    const apiBase = (process.env.API_URL || process.env.APP_URL || 'https://api.mecpro.tec.br').replace(/\/api$/, '');
+    const pdfUrl = `${apiBase}/api/public/estimates/share/${token}`;
 
-    
     if (!estimate.pdfUrl || estimate.pdfStatus !== 'generated') {
       const tenant = estimate.tenant;
       const effectiveTenant = workshopData
