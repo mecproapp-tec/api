@@ -11,18 +11,32 @@ export class BrowserPoolService implements OnModuleDestroy {
     if (this.browser) return this.browser;
 
     if (this.isLaunching) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       return this.getBrowser();
     }
 
     this.isLaunching = true;
+
     try {
       this.browser = await puppeteer.launch({
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+        headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+        ],
       });
+
       this.logger.log('Browser launched');
       return this.browser;
+    } catch (error) {
+      this.logger.error('Erro ao iniciar Puppeteer', error);
+      throw error;
     } finally {
       this.isLaunching = false;
     }
@@ -31,6 +45,7 @@ export class BrowserPoolService implements OnModuleDestroy {
   async onModuleDestroy() {
     if (this.browser) {
       await this.browser.close();
+      this.browser = null;
       this.logger.log('Browser closed');
     }
   }
