@@ -175,7 +175,7 @@ export class InvoicesService {
         type: ShareType.INVOICE,
         resourceId: id,
         tenantId: invoice.tenantId,
-        pdfUrl: invoice.pdfUrl || '',
+        pdfUrl: '',
         expiresAt: new Date(Date.now() + 7 * 86400000),
       },
     });
