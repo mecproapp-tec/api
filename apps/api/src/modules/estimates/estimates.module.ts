@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bullmq';
 import { EstimatesService } from './estimates.service';
 import { EstimatesController, PublicEstimatesController } from './estimates.controller';
 import { PrismaModule } from '../../shared/prisma/prisma.module';
@@ -9,12 +8,7 @@ import { StorageModule } from '../storage/storage.module';
 import { BrowserPoolService } from '../../shared/browser-pool.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-    WhatsappModule,
-    StorageModule,
-    BullModule.registerQueue({ name: 'pdf' }),
-  ],
+  imports: [PrismaModule, WhatsappModule, StorageModule],
   controllers: [EstimatesController, PublicEstimatesController],
   providers: [EstimatesService, EstimatesPdfService, BrowserPoolService],
   exports: [EstimatesPdfService],

@@ -1,16 +1,10 @@
 import { Module } from '@nestjs/common';
-import { EstimatesService } from './estimates.service';
-import { EstimatesController, PublicEstimatesController } from './estimates.controller';
-import { PrismaModule } from '../../shared/prisma/prisma.module';
-import { EstimatesPdfService } from '.estimates-pdf.service';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
-import { StorageModule } from '../storage/storage.module';
-import { BrowserPoolService } from '../../shared/browser-pool.service';
+import { StorageService } from './storage.service';
+import { StorageController } from './storage.controller';
 
 @Module({
-  imports: [PrismaModule, WhatsappModule, StorageModule],
-  controllers: [EstimatesController, PublicEstimatesController],
-  providers: [EstimatesService, EstimatesPdfService, BrowserPoolService],
-  exports: [EstimatesPdfService],
+  providers: [StorageService],
+  controllers: [StorageController],
+  exports: [StorageService],
 })
-export class EstimatesModule {}
+export class StorageModule {}

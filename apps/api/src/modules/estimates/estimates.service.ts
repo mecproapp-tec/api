@@ -65,7 +65,6 @@ export class EstimatesService {
       include: { items: true, client: true, tenant: true },
     });
 
-    // Gera PDF e faz upload imediatamente
     try {
       const pdfBuffer = await this.estimatesPdfService.generateEstimatePdf(estimate, estimate.tenant);
       const pdfUrl = await this.storageService.uploadPdf(pdfBuffer, `${tenantId}/estimates/${estimate.id}.pdf`);
@@ -100,7 +99,7 @@ export class EstimatesService {
     }
     const estimate = await this.prisma.estimate.findFirst({
       where,
-      include: { client: true, items: true },
+      include: { client: true, items: true, tenant: true },
     });
     if (!estimate) throw new NotFoundException('Orçamento não encontrado');
     return estimate;
@@ -152,7 +151,6 @@ export class EstimatesService {
     if (estimate.pdfUrl) {
       return { pdfUrl: estimate.pdfUrl };
     }
-    // Se não tem PDF, gera sob demanda
     const pdfBuffer = await this.estimatesPdfService.generateEstimatePdf(estimate, estimate.tenant);
     const pdfUrl = await this.storageService.uploadPdf(pdfBuffer, `${estimate.tenantId}/estimates/${estimate.id}.pdf`);
     await this.prisma.estimate.update({
@@ -163,7 +161,11 @@ export class EstimatesService {
   }
 
   async sendViaWhatsApp(id: number, tenantId: string, role?: string) {
-    let estimate = await this.findOne(id, tenantId, role);
+    const estimate = await this.prisma.estimate.findFirst({
+      where: { id, tenantId },
+      include: { client: true, items: true, tenant: true },
+    });
+    if (!estimate) throw new NotFoundException('Orçamento não encontrado');
     if (!estimate.client.phone) {
       throw new BadRequestException('Cliente sem telefone');
     }
@@ -177,7 +179,11 @@ export class EstimatesService {
         where: { id },
         data: { pdfUrl, pdfKey: `${tenantId}/estimates/${estimate.id}.pdf` },
       });
-      estimate = await this.findOne(id, tenantId, role);
+      const updated = await this.prisma.estimate.findFirst({
+        where: { id, tenantId },
+        include: { client: true, tenant: true },
+      });
+      estimate.client = updated!.client;
     }
 
     const message = `Olá ${estimate.client.name}!\n\n✅ Seu orçamento #${estimate.id} está pronto!\n\n📄 PDF: ${pdfUrl}\n\n💰 Total: R$ ${estimate.total.toFixed(2)}`;
