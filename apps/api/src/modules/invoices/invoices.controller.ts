@@ -10,8 +10,10 @@ import {
   Req,
   Res,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
+import { InvoicesPdfService } from './invoices-pdf.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { Public } from '../../auth/public.decorator';
 import { Request, Response } from 'express';
@@ -41,7 +43,9 @@ interface UpdateInvoiceDto extends CreateInvoiceDto {
 @Controller('invoices')
 @UseGuards(JwtAuthGuard)
 export class InvoicesController {
-  constructor(private readonly invoicesService: InvoicesService) {}
+  constructor(
+    private readonly invoicesService: InvoicesService,
+  ) {}
 
   @Post()
   create(@Body() body: CreateInvoiceDto, @Req() req: AuthRequest) {
@@ -88,7 +92,7 @@ export class InvoicesController {
     );
   }
 
-  // 🔗 GERAR LINK
+  // 🔗 GERAR LINK PÚBLICO
   @Post(':id/share')
   async generateShareLink(
     @Param('id') id: string,
@@ -98,20 +102,17 @@ export class InvoicesController {
       Number(id),
     );
 
-   const baseUrl =
-  (process.env.API_URL || 'https://api.mecpro.tec.br').replace(/\/$/, '');
+    const baseUrl =
+      (process.env.API_URL || 'https://api.mecpro.tec.br').replace(/\/$/, '');
 
-return {
-  url: `${baseUrl}/public/invoices/share/${token}`,
-};
+    return {
+      url: `${baseUrl}/public/invoices/share/${token}`,
+    };
   }
 
   // 📲 WHATSAPP
   @Post(':id/send-whatsapp')
-  async sendViaWhatsApp(
-    @Param('id') id: string,
-    @Req() req: AuthRequest,
-  ) {
+  async sendViaWhatsApp(@Param('id') id: string) {
     return this.invoicesService.sendViaWhatsApp(Number(id));
   }
 }
@@ -121,7 +122,10 @@ return {
 // ============================
 @Controller('public/invoices')
 export class PublicInvoicesController {
-  constructor(private readonly invoicesService: InvoicesService) {}
+  constructor(
+    private readonly invoicesService: InvoicesService,
+    private readonly invoicesPdfService: InvoicesPdfService,
+  ) {}
 
   @Public()
   @Get('share/:token')
@@ -136,18 +140,25 @@ export class PublicInvoicesController {
     }
 
     try {
-      const result: any =
-        await this.invoicesService.getPdfByShareToken(token);
+      // 🔥 BUSCA FATURA
+      const invoice =
+        await this.invoicesService.getInvoiceByShareToken(token);
 
-      // 🔁 REDIRECT (PDF já pronto no storage)
-      if ('pdfUrl' in result) {
-        return res.redirect(result.pdfUrl);
+      if (!invoice) {
+        throw new NotFoundException('Fatura não encontrada');
       }
 
-      // ⏳ AINDA GERANDO
-      return res
-        .status(HttpStatus.ACCEPTED)
-        .send('Gerando PDF, tente novamente em alguns segundos...');
+      // 🔥 GERA PDF COM TEMPLATE NOVO
+      const pdf =
+        await this.invoicesPdfService.generateInvoicePdf(invoice);
+
+      // 🔥 RETORNA PDF DIRETO
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename=fatura.pdf`,
+      });
+
+      return res.send(pdf);
     } catch (error: any) {
       console.error('Erro ao gerar PDF público:', error);
 
