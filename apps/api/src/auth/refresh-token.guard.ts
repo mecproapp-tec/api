@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../shared/prisma.service';
+import { PrismaService } from '../shared/prisma/prisma.service'; // ✅ corrigido
 
 @Injectable()
 export class RefreshTokenGuard implements CanActivate {

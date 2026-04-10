@@ -2,7 +2,7 @@
   "compilerOptions": {
     "assets": [
       {
-        "include": "modules/pdf/templates/**/*",
+        "include": "modules/**/*.hbs",
         "outDir": "dist"
       }
     ],

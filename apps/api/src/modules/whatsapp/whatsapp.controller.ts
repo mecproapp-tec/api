@@ -9,6 +9,11 @@ export class WhatsappController {
 
   @Post('link')
   async generateLink(@Body() dto: { phone: string; message: string }) {
-    return { link: this.whatsappService.generateWhatsAppLink(dto.phone, dto.message) };
+    const link = this.whatsappService.generateWhatsAppLink(
+      dto.phone,
+      dto.message,
+    );
+
+    return { link };
   }
 }

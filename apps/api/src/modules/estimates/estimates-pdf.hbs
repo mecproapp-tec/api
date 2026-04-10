@@ -5,132 +5,119 @@
 <title>Orçamento #{{estimateNumber}}</title>
 
 <style>
-  body {
-    font-family: Arial, Helvetica, sans-serif;
-    margin: 0;
-    padding: 20px;
-    background: #ffffff;
-    color: #333;
-  }
+* { box-sizing: border-box; }
 
-  .container {
-    max-width: 1000px;
-    margin: 0 auto;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    overflow: hidden;
-  }
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: #fff;
+  color: #333;
+}
 
-  .content {
-    padding: 25px;
-  }
+.container {
+  max-width: 1000px;
+  margin: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
 
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid #0077ff;
-    padding-bottom: 15px;
-    margin-bottom: 20px;
-  }
+.content { padding: 30px; }
 
-  .logo img {
-    max-height: 60px;
-  }
+.header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 2px solid #0077ff;
+  padding-bottom: 20px;
+  margin-bottom: 25px;
+}
 
-  .company-info {
-    text-align: right;
-    font-size: 12px;
-  }
+.logo img {
+  max-height: 70px;
+}
 
-  .company-info h2 {
-    margin: 0;
-    color: #0077ff;
-    font-size: 16px;
-  }
+.company-info {
+  text-align: right;
+  font-size: 12px;
+}
 
-  .title {
-    text-align: center;
-    margin: 20px 0;
-  }
+.company-info h2 {
+  margin: 0;
+  color: #0077ff;
+}
 
-  .title h1 {
-    margin: 0;
-    font-size: 24px;
-    color: #0077ff;
-  }
+.title {
+  text-align: center;
+  margin-bottom: 25px;
+}
 
-  .status {
-    display: inline-block;
-    margin-top: 5px;
-    background: #e6f4ff;
-    color: #0077ff;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-  }
+.title h1 {
+  margin: 0;
+  color: #0077ff;
+}
 
-  .box {
-    background: #f9f9f9;
-    padding: 15px;
-    border-radius: 6px;
-    margin-bottom: 20px;
-  }
+.status {
+  display: inline-block;
+  margin-top: 8px;
+  background: #e6f4ff;
+  color: #0077ff;
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+}
 
-  .box h3 {
-    margin-top: 0;
-    color: #0077ff;
-  }
+.box {
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
 
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    font-size: 13px;
-  }
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-  }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
 
-  th {
-    background: #f0f7ff;
-    padding: 10px;
-    text-align: left;
-    font-size: 13px;
-    border-bottom: 2px solid #0077ff;
-  }
+th {
+  background: #f0f7ff;
+  color: #0077ff;
+  padding: 10px;
+  text-align: left;
+}
 
-  td {
-    padding: 8px;
-    font-size: 13px;
-    border-bottom: 1px solid #eee;
-  }
+td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
 
-  .text-right {
-    text-align: right;
-  }
+.right { text-align: right; }
 
-  .totals {
-    margin-top: 20px;
-    text-align: right;
-  }
+.totals {
+  margin-top: 20px;
+  text-align: right;
+}
 
-  .grand-total {
-    font-size: 18px;
-    color: #0077ff;
-    font-weight: bold;
-    margin-top: 10px;
-  }
+.total {
+  font-size: 20px;
+  font-weight: bold;
+  color: #0077ff;
+  border-top: 2px solid #000;
+  padding-top: 5px;
+}
 
-  .footer {
-    margin-top: 30px;
-    font-size: 11px;
-    text-align: center;
-    color: #888;
-  }
+.footer {
+  margin-top: 40px;
+  font-size: 11px;
+  text-align: center;
+  color: #888;
+}
 </style>
 </head>
 
@@ -138,96 +125,83 @@
 <div class="container">
 <div class="content">
 
-  <!-- HEADER -->
-  <div class="header">
-    <div class="logo">
-      {{#if logoUrl}}
-        <img src="{{logoUrl}}" />
-      {{else}}
-        <div style="width:100px;height:50px;background:#eee;text-align:center;line-height:50px;">
-          LOGO
-        </div>
-      {{/if}}
-    </div>
-
-    <div class="company-info">
-      <h2>{{companyName}}</h2>
-      <p>{{companyDocument}}</p>
-      <p>{{companyPhone}}</p>
-      <p>{{companyEmail}}</p>
-    </div>
-  </div>
-
-  <!-- TITLE -->
-  <div class="title">
-    <h1>ORÇAMENTO Nº {{estimateNumber}}</h1>
-    <div class="status">{{status}}</div>
-  </div>
-
-  <!-- CLIENT -->
-  <div class="box">
-    <h3>Cliente</h3>
-    <div class="grid">
-      <p><strong>Nome:</strong> {{client.name}}</p>
-      <p><strong>Telefone:</strong> {{client.phone}}</p>
-      <p><strong>Veículo:</strong> {{client.vehicle}}</p>
-      <p><strong>Placa:</strong> {{client.plate}}</p>
-      <p><strong>Documento:</strong> {{client.document}}</p>
-      <p><strong>Endereço:</strong> {{client.address}}</p>
-    </div>
-  </div>
-
-  <!-- INFO -->
-  <div class="box">
-    <p><strong>Emissão:</strong> {{issueDate}}</p>
-    <p><strong>Validade:</strong> {{validUntil}}</p>
-  </div>
-
-  <!-- TABLE -->
-  <table>
-    <thead>
-      <tr>
-        <th>Descrição</th>
-        <th class="text-right">Qtd</th>
-        <th class="text-right">Unit.</th>
-        <th class="text-right">ISS</th>
-        <th class="text-right">Total</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      {{#each items}}
-      <tr>
-        <td>{{this.description}}</td>
-        <td class="text-right">{{this.quantity}}</td>
-        <td class="text-right">{{this.unitPrice}}</td>
-        <td class="text-right">{{this.issPercent}}%</td>
-        <td class="text-right">{{this.total}}</td>
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
-
-  <!-- TOTALS -->
-  <div class="totals">
-    <p>Subtotal: R$ {{subtotal}}</p>
-
-    {{#if issValue}}
-      <p>ISS: R$ {{issValue}}</p>
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    {{#if logoUrl}}
+      <img src="{{logoUrl}}" />
     {{/if}}
-
-    <div class="grand-total">
-      TOTAL: R$ {{total}}
-    </div>
   </div>
-
-  <!-- FOOTER -->
-  <div class="footer">
-    <p>{{companyName}}</p>
+  <div class="company-info">
+    <h2>{{companyName}}</h2>
     <p>{{companyDocument}}</p>
-    <p>{{companyPhone}} - {{companyEmail}}</p>
-    <p>Documento gerado automaticamente</p>
+    <p>{{companyPhone}}</p>
+    <p>{{companyEmail}}</p>
   </div>
+</div>
+
+<!-- TITLE -->
+<div class="title">
+  <h1>ORÇAMENTO Nº {{estimateNumber}}</h1>
+  <div class="status">{{status}}</div>
+</div>
+
+<!-- CLIENTE -->
+<div class="box">
+  <strong>Cliente</strong>
+  <div class="grid">
+    <p><b>Nome:</b> {{client.name}}</p>
+    <p><b>Telefone:</b> {{client.phone}}</p>
+    <p><b>Veículo:</b> {{client.vehicle}}</p>
+    <p><b>Placa:</b> {{client.plate}}</p>
+    <p><b>Documento:</b> {{client.document}}</p>
+    <p><b>Endereço:</b> {{client.address}}</p>
+  </div>
+</div>
+
+<!-- DATAS -->
+<div class="box">
+  <p><b>Emissão:</b> {{issueDate}}</p>
+  <p><b>Validade:</b> {{validUntil}}</p>
+</div>
+
+<!-- ITENS -->
+<table>
+<thead>
+<tr>
+  <th>Descrição</th>
+  <th class="right">Qtd</th>
+  <th class="right">Unit</th>
+  <th class="right">ISS (%)</th>
+  <th class="right">Total</th>
+</tr>
+</thead>
+
+<tbody>
+{{#each items}}
+<tr>
+  <td>{{description}}</td>
+  <td class="right">{{quantity}}</td>
+  <td class="right">R$ {{unitPrice}}</td>
+  <td class="right">{{issPercent}}</td>
+  <td class="right">R$ {{total}}</td>
+</tr>
+{{/each}}
+</tbody>
+</table>
+
+<!-- TOTAIS -->
+<div class="totals">
+  <p>Valor Bruto: R$ {{subtotal}}</p>
+  <p>ISS Total: R$ {{issValue}}</p>
+  <div class="total">TOTAL FINAL: R$ {{total}}</div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p>{{companyName}}</p>
+  <p>{{companyPhone}} | {{companyEmail}}</p>
+</div>
 
 </div>
 </div>

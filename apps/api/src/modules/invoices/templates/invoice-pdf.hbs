@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  background: #f4f6f8;
+}
+
+.page {
+  max-width: 900px;
+  margin: auto;
+  background: white;
+  padding: 30px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 3px solid #10b981;
+}
+
+.title {
+  color: #10b981;
+}
+
+table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+th {
+  background: #10b981;
+  color: white;
+  padding: 10px;
+}
+
+td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.total {
+  text-align: right;
+  font-size: 22px;
+  margin-top: 20px;
+  color: #10b981;
+}
+</style>
+</head>
+
+<body>
+<div class="page">
+
+<div class="header">
+  <div>
+    <h2>{{companyName}}</h2>
+    <p>{{companyPhone}}</p>
+  </div>
+  <div>
+    <h1 class="title">FATURA</h1>
+    <p>#{{invoiceNumber}}</p>
+  </div>
+</div>
+
+<p><strong>Cliente:</strong> {{client.name}}</p>
+
+<table>
+<thead>
+<tr>
+  <th>Descrição</th>
+  <th>Qtd</th>
+  <th>Valor</th>
+  <th>Total</th>
+</tr>
+</thead>
+
+<tbody>
+{{#each items}}
+<tr>
+  <td>{{description}}</td>
+  <td>{{quantity}}</td>
+  <td>R$ {{unitPrice}}</td>
+  <td>R$ {{total}}</td>
+</tr>
+{{/each}}
+</tbody>
+</table>
+
+<div class="total">
+  Total: R$ {{total}}
+</div>
+
+</div>
+</body>
+</html>

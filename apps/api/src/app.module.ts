@@ -4,10 +4,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 // 🔥 CORE
 import { PrismaModule } from './shared/prisma/prisma.module';
-import { SharedModule } from './shared/shared.module';
 
-// 🔥 FILA (IMPORTANTE VIR ANTES)
-import { QueueModule } from './modules/common/queues/queue.module';
+
+// 🔥 FILA (DESATIVADA POR AGORA)
+// import { QueueModule } from './modules/common/queues/queue.module';
 
 // 🔥 FEATURE MODULES
 import { AuthModule } from './auth/auth.module';
@@ -26,7 +26,7 @@ import { ContactModule } from './modules/contact/contact.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { UsersModule } from './modules/users/users.module';
-import { PdfModule } from './modules/pdf/pdf.module';
+
 import { PublicShareModule } from './modules/public-share/public-share.module';
 
 // 🔥 APP
@@ -38,18 +38,19 @@ import { AppService } from './app.service';
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
 
-    // ⚡ FILA PRIMEIRO
-    QueueModule,
-
     // ⚡ CORE
     PrismaModule,
-    SharedModule,
+   
 
-    // ⚡ MÓDULOS
+    // ⚠️ FILA DESATIVADA (EVITA SOBRESCREVER PDF)
+    // QueueModule,
+
+    // ⚡ AUTH / CORE APP
     AuthModule,
     PaymentModule,
     WebhookModule,
 
+    // ⚡ FEATURES
     ClientsModule,
     EstimatesModule,
     InvoicesModule,
@@ -62,7 +63,7 @@ import { AppService } from './app.service';
     WhatsappModule,
     StorageModule,
     UsersModule,
-    PdfModule,
+
     PublicShareModule,
   ],
   controllers: [AppController],
