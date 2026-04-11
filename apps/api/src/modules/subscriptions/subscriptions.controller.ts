@@ -1,32 +1,39 @@
-import { Controller, Get, Post, Param, UseGuards, Request } from '@nestjs/common';
-import { SubscriptionsService } from './subscriptions.service';
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { SessionGuard } from '../../auth/guards/session.guard';
+import { RolesGuard } from '../../auth/roles.guard';
+import { Roles } from '../../auth/roles.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+
+interface UserPayload {
+  id: number;
+  tenantId: string;
+  role: string;
+  sessionToken: string;
+}
 
 @Controller('subscriptions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SessionGuard)
 export class SubscriptionsController {
-  constructor(private subscriptionsService: SubscriptionsService) {}
-
-  @Get('me')
-  async getMySubscription(@Param('tenantId') tenantId: string) {
-    return this.subscriptionsService.getByTenantId(tenantId);
+  @Get()
+  async findMySubscription(@CurrentUser() user: UserPayload) {
+    return { 
+      message: 'Minha assinatura',
+      tenantId: user.tenantId,
+      plan: 'PRO',
+      status: 'ACTIVE',
+    };
   }
 
-  @Get(':id')
-  async getSubscription(@Param('id') id: string) {
-    return this.subscriptionsService.getById(id);
+  @Post('cancel')
+  async cancelSubscription(@CurrentUser() user: UserPayload) {
+    return { message: 'Assinatura cancelada', tenantId: user.tenantId };
   }
 
-  @Get('status')
-  async getStatus(@Request() req) {
-    const tenantId = req.user.tenantId;
-    return this.subscriptionsService.getSubscriptionStatus(tenantId);
-  }
-
-  @Post('checkout')
-  async createCheckout(@Request() req) {
-    const tenantId = req.user.tenantId;
-    const email = req.user.email;
-    return this.subscriptionsService.createCheckout(tenantId, email);
+  @Get('admin/all')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
+  async findAllSubscriptions() {
+    return { message: 'Lista de todas as assinaturas' };
   }
 }

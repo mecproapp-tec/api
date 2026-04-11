@@ -1,19 +1,23 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { EstimatesController } from './estimates.controller';
 import { EstimatesService } from './estimates.service';
 import { EstimatesPdfService } from './estimates-pdf.service';
-
-import { StorageModule } from '../storage/storage.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { EstimatesWhatsappService } from './estimates-whatsapp.service';
+import { StorageService } from '../storage/storage.service';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { AuthModule } from '../../auth/auth.module';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 @Module({
-  imports: [
-    StorageModule,
-    forwardRef(() => WhatsappModule), // 🔥 AQUI
-  ],
+  imports: [AuthModule, WhatsappModule],
   controllers: [EstimatesController],
-  providers: [EstimatesService, EstimatesPdfService, PrismaService],
-  exports: [EstimatesService, EstimatesPdfService],
+  providers: [
+    PrismaService,
+    EstimatesService,
+    EstimatesPdfService,
+    StorageService,
+    EstimatesWhatsappService,
+  ],
+  exports: [EstimatesService, EstimatesPdfService, EstimatesWhatsappService],
 })
 export class EstimatesModule {}

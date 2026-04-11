@@ -3,207 +3,222 @@
 <head>
 <meta charset="UTF-8">
 <title>Orçamento #{{estimateNumber}}</title>
-
 <style>
-* { box-sizing: border-box; }
-
-body {
-  font-family: 'Segoe UI', Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-  background: #fff;
-  color: #333;
-}
-
-.container {
-  max-width: 1000px;
-  margin: auto;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-}
-
-.content { padding: 30px; }
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 2px solid #0077ff;
-  padding-bottom: 20px;
-  margin-bottom: 25px;
-}
-
-.logo img {
-  max-height: 70px;
-}
-
-.company-info {
-  text-align: right;
-  font-size: 12px;
-}
-
-.company-info h2 {
-  margin: 0;
-  color: #0077ff;
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 25px;
-}
-
-.title h1 {
-  margin: 0;
-  color: #0077ff;
-}
-
-.status {
-  display: inline-block;
-  margin-top: 8px;
-  background: #e6f4ff;
-  color: #0077ff;
-  padding: 5px 15px;
-  border-radius: 20px;
-  font-size: 12px;
-}
-
-.box {
-  background: #f9f9f9;
-  padding: 15px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-th {
-  background: #f0f7ff;
-  color: #0077ff;
-  padding: 10px;
-  text-align: left;
-}
-
-td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.right { text-align: right; }
-
-.totals {
-  margin-top: 20px;
-  text-align: right;
-}
-
-.total {
-  font-size: 20px;
-  font-weight: bold;
-  color: #0077ff;
-  border-top: 2px solid #000;
-  padding-top: 5px;
-}
-
-.footer {
-  margin-top: 40px;
-  font-size: 11px;
-  text-align: center;
-  color: #888;
-}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f5f5f5;
+    padding: 40px 20px;
+  }
+  
+  .invoice-box {
+    max-width: 1000px;
+    margin: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  
+  .invoice-header {
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+  }
+  
+  .invoice-header h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+  
+  .invoice-header .status {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  
+  .invoice-body {
+    padding: 30px;
+  }
+  
+  .company-info {
+    text-align: right;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+  }
+  
+  .company-info h2 {
+    color: #1a73e8;
+    margin-bottom: 5px;
+  }
+  
+  .company-info p {
+    color: #666;
+    font-size: 12px;
+    margin: 3px 0;
+  }
+  
+  .client-box {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+  }
+  
+  .client-box h3 {
+    color: #1a73e8;
+    margin-bottom: 15px;
+    font-size: 16px;
+  }
+  
+  .client-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .client-item {
+    font-size: 14px;
+  }
+  
+  .client-item strong {
+    color: #333;
+    display: inline-block;
+    min-width: 70px;
+  }
+  
+  .dates {
+    display: flex;
+    justify-content: space-between;
+    background: #fff3e0;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    font-size: 13px;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+  }
+  
+  th {
+    background: #f0f7ff;
+    color: #1a73e8;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  
+  td {
+    padding: 12px;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 13px;
+  }
+  
+  .text-right {
+    text-align: right;
+  }
+  
+  .totals {
+    margin-top: 25px;
+    text-align: right;
+    border-top: 2px solid #e0e0e0;
+    padding-top: 20px;
+  }
+  
+  .totals p {
+    margin: 5px 0;
+    font-size: 14px;
+  }
+  
+  .total-final {
+    font-size: 22px;
+    font-weight: bold;
+    color: #1a73e8;
+    margin-top: 10px;
+  }
+  
+  .footer {
+    background: #f8f9fa;
+    padding: 20px;
+    text-align: center;
+    font-size: 11px;
+    color: #888;
+    border-top: 1px solid #e0e0e0;
+  }
 </style>
 </head>
-
 <body>
-<div class="container">
-<div class="content">
-
-<!-- HEADER -->
-<div class="header">
-  <div class="logo">
-    {{#if logoUrl}}
-      <img src="{{logoUrl}}" />
-    {{/if}}
+<div class="invoice-box">
+  <div class="invoice-header">
+    <h1>ORÇAMENTO Nº {{estimateNumber}}</h1>
+    <div class="status">{{status}}</div>
   </div>
-  <div class="company-info">
-    <h2>{{companyName}}</h2>
-    <p>{{companyDocument}}</p>
-    <p>{{companyPhone}}</p>
-    <p>{{companyEmail}}</p>
+  
+  <div class="invoice-body">
+    <div class="company-info">
+      <h2>{{companyName}}</h2>
+      <p>{{companyDocument}} | {{companyPhone}}</p>
+      <p>{{companyEmail}}</p>
+    </div>
+    
+    <div class="client-box">
+      <h3>📋 DADOS DO CLIENTE</h3>
+      <div class="client-grid">
+        <div class="client-item"><strong>Nome:</strong> {{client.name}}</div>
+        <div class="client-item"><strong>Telefone:</strong> {{client.phone}}</div>
+        <div class="client-item"><strong>Veículo:</strong> {{client.vehicle}}</div>
+        <div class="client-item"><strong>Placa:</strong> {{client.plate}}</div>
+        <div class="client-item"><strong>Documento:</strong> {{client.document}}</div>
+        <div class="client-item"><strong>Endereço:</strong> {{client.address}}</div>
+      </div>
+    </div>
+    
+    <div class="dates">
+      <span>📅 Emissão: {{issueDate}}</span>
+      <span>⏰ Validade: {{validUntil}}</span>
+    </div>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Descrição</th>
+          <th class="text-right">Qtd</th>
+          <th class="text-right">Unitário</th>
+          <th class="text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+        <tr>
+          <td>{{description}}</td>
+          <td class="text-right">{{quantity}}</td>
+          <td class="text-right">R$ {{unitPrice}}</td>
+          <td class="text-right">R$ {{total}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    
+    <div class="totals">
+      <p>Subtotal: R$ {{subtotal}}</p>
+      <div class="total-final">TOTAL: R$ {{total}}</div>
+    </div>
   </div>
-</div>
-
-<!-- TITLE -->
-<div class="title">
-  <h1>ORÇAMENTO Nº {{estimateNumber}}</h1>
-  <div class="status">{{status}}</div>
-</div>
-
-<!-- CLIENTE -->
-<div class="box">
-  <strong>Cliente</strong>
-  <div class="grid">
-    <p><b>Nome:</b> {{client.name}}</p>
-    <p><b>Telefone:</b> {{client.phone}}</p>
-    <p><b>Veículo:</b> {{client.vehicle}}</p>
-    <p><b>Placa:</b> {{client.plate}}</p>
-    <p><b>Documento:</b> {{client.document}}</p>
-    <p><b>Endereço:</b> {{client.address}}</p>
+  
+  <div class="footer">
+    <p>{{companyName}} - {{companyPhone}} | {{companyEmail}}</p>
+    <p>Este é um documento oficial. Em caso de dúvidas, entre em contato.</p>
   </div>
-</div>
-
-<!-- DATAS -->
-<div class="box">
-  <p><b>Emissão:</b> {{issueDate}}</p>
-  <p><b>Validade:</b> {{validUntil}}</p>
-</div>
-
-<!-- ITENS -->
-<table>
-<thead>
-<tr>
-  <th>Descrição</th>
-  <th class="right">Qtd</th>
-  <th class="right">Unit</th>
-  <th class="right">ISS (%)</th>
-  <th class="right">Total</th>
-</tr>
-</thead>
-
-<tbody>
-{{#each items}}
-<tr>
-  <td>{{description}}</td>
-  <td class="right">{{quantity}}</td>
-  <td class="right">R$ {{unitPrice}}</td>
-  <td class="right">{{issPercent}}</td>
-  <td class="right">R$ {{total}}</td>
-</tr>
-{{/each}}
-</tbody>
-</table>
-
-<!-- TOTAIS -->
-<div class="totals">
-  <p>Valor Bruto: R$ {{subtotal}}</p>
-  <p>ISS Total: R$ {{issValue}}</p>
-  <div class="total">TOTAL FINAL: R$ {{total}}</div>
-</div>
-
-<!-- FOOTER -->
-<div class="footer">
-  <p>{{companyName}}</p>
-  <p>{{companyPhone}} | {{companyEmail}}</p>
-</div>
-
-</div>
 </div>
 </body>
 </html>

@@ -1,22 +1,35 @@
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+  UnauthorizedException,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { Request } from 'express';
+
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { JwtAuthGuard } from './guards/jwt.guard';
 import { RegisterAdminDto } from './dto/register-admin.dto';
 
-// ✅ TIPAGEM GLOBAL DO REQUEST
-interface AuthRequest extends Request {
-  user: {
-    id: number;
-    sessionToken: string;
-  };
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Public } from './public.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
+
+interface UserPayload {
+  id: number;
+  tenantId: string;
+  role: string;
+  sessionToken: string;
 }
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('signup')
   async signup(
     @Body()
@@ -30,6 +43,7 @@ export class AuthController {
     return this.authService.signup(body);
   }
 
+  @Public()
   @Post('register-tenant')
   async registerTenant(
     @Body()
@@ -50,21 +64,27 @@ export class AuthController {
     return this.authService.registerTenant(body);
   }
 
+  @Public()
   @Post('register-admin')
   async registerAdmin(@Body() body: RegisterAdminDto) {
     return this.authService.registerAdmin(body);
   }
 
+  @Public()
   @Post('login')
   async login(@Body() body: LoginDto, @Req() req: Request) {
     return this.authService.login(body.email, body.password, req);
   }
 
-@Post('logout')
-@UseGuards(JwtAuthGuard)
-async logout(@Req() req: any) {
-  const user = req.user;
-
-  return this.authService.logout(user.id, user.sessionToken);
-}
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@CurrentUser() user: UserPayload) {
+    // Se não tem usuário, já está desconectado
+    if (!user?.id) {
+      return { message: 'Logout realizado com sucesso' };
+    }
+    
+    return this.authService.logout(user.id, user.sessionToken);
+  }
 }

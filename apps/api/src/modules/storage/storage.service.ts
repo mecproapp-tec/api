@@ -1,5 +1,5 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Injectable, Logger, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class StorageService {
@@ -39,7 +39,6 @@ export class StorageService {
       throw new InternalServerErrorException('Buffer inválido');
     }
 
-    // 🔥 Garante que não seja apenas uma "pasta"
     if (!key.toLowerCase().includes('.pdf')) {
       throw new InternalServerErrorException(
         'Key inválida: precisa terminar com .pdf (ex: pasta/arquivo.pdf)',
@@ -77,13 +76,28 @@ export class StorageService {
         stream.on('data', (chunk: Buffer) => chunks.push(chunk));
         stream.on('end', () => resolve(Buffer.concat(chunks)));
         stream.on('error', (err) => {
-          stream.destroy(); // evita memory leak
+          stream.destroy();
           reject(err);
         });
       });
     } catch (error) {
       this.logger.error(`❌ Erro ao buscar arquivo: ${key}`, error);
-      throw new InternalServerErrorException('Arquivo não encontrado');
+      throw new NotFoundException('Arquivo não encontrado');
+    }
+  }
+
+  async deleteFile(key: string): Promise<void> {
+    try {
+      await this.s3.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+      this.logger.log(`✅ Arquivo deletado: ${key}`);
+    } catch (error) {
+      this.logger.error(`❌ Erro ao deletar arquivo: ${key}`, error);
+      throw new InternalServerErrorException(`Falha ao deletar: ${error.message}`);
     }
   }
 }

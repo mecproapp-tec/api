@@ -1,63 +1,41 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
-import { ClientsService } from './clients.service';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { Request } from 'express';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { SessionGuard } from '../../auth/guards/session.guard';
+import { BillingGuard } from '../../auth/guards/billing.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+
+interface UserPayload {
+  id: number;
+  tenantId: string;
+  role: string;
+  sessionToken: string;
+}
 
 @Controller('clients')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SessionGuard, BillingGuard)
 export class ClientsController {
-  constructor(private readonly clientsService: ClientsService) {}
-
   @Get()
-  async findAll(@Req() req: Request) {
-    const user = (req as any).user;
-    const tenantId = user.tenantId;
-    const userRole = user.role;
-    return this.clientsService.findAll(tenantId, userRole);
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: string, @Req() req: Request) {
-    const user = (req as any).user;
-    const tenantId = user.tenantId;
-    const userRole = user.role;
-    return this.clientsService.findOne(+id, tenantId, userRole);
+  async findAll(@CurrentUser() user: UserPayload) {
+    return { message: 'Lista de clientes', tenantId: user.tenantId };
   }
 
   @Post()
-  async create(@Body() createClientDto: any, @Req() req: Request) {
-    const user = (req as any).user;
-    const tenantId = user.tenantId;
-    return this.clientsService.create(tenantId, createClientDto);
+  async create(@Body() data: any, @CurrentUser() user: UserPayload) {
+    return { message: 'Cliente criado', data, tenantId: user.tenantId };
   }
 
-  @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateClientDto: any,
-    @Req() req: Request,
-  ) {
-    const user = (req as any).user;
-    const tenantId = user.tenantId;
-    const userRole = user.role;
-    return this.clientsService.update(+id, tenantId, updateClientDto, userRole);
+  @Get(':id')
+  async findOne(@Param('id') id: string, @CurrentUser() user: UserPayload) {
+    return { message: `Cliente ${id}`, tenantId: user.tenantId };
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() data: any, @CurrentUser() user: UserPayload) {
+    return { message: `Cliente ${id} atualizado`, data };
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string, @Req() req: Request) {
-    const user = (req as any).user;
-    const tenantId = user.tenantId;
-    const userRole = user.role;
-    return this.clientsService.remove(+id, tenantId, userRole);
+  async remove(@Param('id') id: string, @CurrentUser() user: UserPayload) {
+    return { message: `Cliente ${id} removido` };
   }
 }

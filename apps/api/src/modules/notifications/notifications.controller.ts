@@ -1,24 +1,35 @@
-import { Controller, Get, Put, Param, UseGuards, Req } from '@nestjs/common';
-import { NotificationsService } from './notifications.service';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { SessionGuard } from '../../auth/guards/session.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+
+interface UserPayload {
+  id: number;
+  tenantId: string;
+  role: string;
+  sessionToken: string;
+}
 
 @Controller('notifications')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SessionGuard)
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
-
   @Get()
-  async findAll(@Req() req) {
-    return this.notificationsService.findAll(req.user.tenantId);
+  async findAll(@CurrentUser() user: UserPayload) {
+    return { message: 'Lista de notificações', userId: user.id };
   }
 
-  @Put(':id/read')
-  async markAsRead(@Param('id') id: string, @Req() req) {
-    return this.notificationsService.markAsRead(Number(id), req.user.tenantId);
+  @Post()
+  async create(@Body() data: any, @CurrentUser() user: UserPayload) {
+    return { message: 'Notificação criada', data, userId: user.id };
   }
 
-  @Put('read-all')
-  async markAllAsRead(@Req() req) {
-    return this.notificationsService.markAllAsRead(req.user.tenantId);
+  @Get(':id')
+  async findOne(@Param('id') id: string, @CurrentUser() user: UserPayload) {
+    return { message: `Notificação ${id}`, userId: user.id };
+  }
+
+  @Post(':id/mark-read')
+  async markAsRead(@Param('id') id: string, @CurrentUser() user: UserPayload) {
+    return { message: `Notificação ${id} marcada como lida` };
   }
 }

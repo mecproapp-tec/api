@@ -82,7 +82,43 @@ export class InvoicesService {
       },
     });
 
+    // 🔥 GERA PDF AUTOMATICAMENTE
+    await this.generateAndUploadPdf(invoice);
+
     return invoice;
+  }
+
+  // ============================
+  // GERAR PDF
+  // ============================
+  async generateAndUploadPdf(invoice: any) {
+    try {
+      const pdfBuffer =
+        await this.invoicesPdfService.generateInvoicePdf(invoice);
+
+      const pdfKey = `${invoice.tenantId}/invoices/${invoice.id}.pdf`;
+
+      const pdfUrl = await this.storageService.uploadPdf(
+        pdfBuffer,
+        pdfKey,
+      );
+
+      await this.prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          pdfUrl,
+          pdfKey,
+          pdfStatus: 'generated',
+        },
+      });
+
+      this.logger.log(`PDF gerado fatura ${invoice.id}`);
+
+      return pdfUrl;
+    } catch (error) {
+      this.logger.error(`Erro PDF fatura ${invoice.id}`, error);
+      return null;
+    }
   }
 
   // ============================
@@ -177,7 +213,7 @@ export class InvoicesService {
   }
 
   // ============================
-  // 🔥 NOVO - BUSCAR FATURA PELO TOKEN
+  // 🔥 LINK PUBLICO
   // ============================
   async getInvoiceByShareToken(token: string) {
     const share = await this.prisma.publicShare.findFirst({
@@ -205,11 +241,18 @@ export class InvoicesService {
       throw new NotFoundException('Fatura não encontrada');
     }
 
-    return invoice;
+    // 🔥 PERFORMANCE
+    if (invoice.pdfUrl) {
+      return { pdfUrl: invoice.pdfUrl };
+    }
+
+    const pdfUrl = await this.generateAndUploadPdf(invoice);
+
+    return { pdfUrl };
   }
 
   // ============================
-  // 📲 WHATSAPP (ATUALIZADO)
+  // WHATSAPP
   // ============================
   async sendViaWhatsApp(id: number) {
     const invoice = await this.prisma.invoice.findUnique({

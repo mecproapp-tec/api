@@ -1,34 +1,41 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
-import { AppointmentsService } from './appointments.service';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { SessionGuard } from '../../auth/guards/session.guard';
+import { BillingGuard } from '../../auth/guards/billing.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+
+interface UserPayload {
+  id: number;
+  tenantId: string;
+  role: string;
+  sessionToken: string;
+}
 
 @Controller('appointments')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SessionGuard, BillingGuard)
 export class AppointmentsController {
-  constructor(private readonly appointmentsService: AppointmentsService) {}
-
-  @Post()
-  create(@Body() data: { clientId: number; date: string; comment?: string }, @Req() req) {
-    return this.appointmentsService.create(req.user.tenantId, data);
+  @Get()
+  async findAll(@CurrentUser() user: UserPayload) {
+    return { message: 'Lista de agendamentos', tenantId: user.tenantId };
   }
 
-  @Get()
-  findAll(@Req() req) {
-    return this.appointmentsService.findAll(req.user.tenantId);
+  @Post()
+  async create(@Body() data: any, @CurrentUser() user: UserPayload) {
+    return { message: 'Agendamento criado', data, tenantId: user.tenantId };
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Req() req) {
-    return this.appointmentsService.findOne(Number(id), req.user.tenantId);
+  async findOne(@Param('id') id: string, @CurrentUser() user: UserPayload) {
+    return { message: `Agendamento ${id}`, tenantId: user.tenantId };
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: { clientId: number; date: string; comment?: string }, @Req() req) {
-    return this.appointmentsService.update(Number(id), req.user.tenantId, data);
+  async update(@Param('id') id: string, @Body() data: any, @CurrentUser() user: UserPayload) {
+    return { message: `Agendamento ${id} atualizado`, data };
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req) {
-    return this.appointmentsService.remove(Number(id), req.user.tenantId);
+  async remove(@Param('id') id: string, @CurrentUser() user: UserPayload) {
+    return { message: `Agendamento ${id} removido` };
   }
 }

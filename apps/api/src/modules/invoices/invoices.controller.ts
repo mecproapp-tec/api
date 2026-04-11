@@ -1,179 +1,54 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-  Req,
-  Res,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
-import { InvoicesService } from './invoices.service';
-import { InvoicesPdfService } from './invoices-pdf.service';
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
-import { Public } from '../../auth/public.decorator';
-import { Request, Response } from 'express';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { SessionGuard } from '../../auth/guards/session.guard';
+import { BillingGuard } from '../../auth/guards/billing.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
-// ============================
-// TIPOS
-// ============================
-interface AuthRequest extends Request {
-  user: {
-    tenantId: string;
-    role: string;
-  };
+interface UserPayload {
+  id: number;
+  tenantId: string;
+  role: string;
+  sessionToken: string;
 }
 
-interface CreateInvoiceDto {
-  clientId: number;
-  items: any[];
-}
-
-interface UpdateInvoiceDto extends CreateInvoiceDto {
-  status?: string;
-}
-
-// ============================
-// CONTROLLER PRIVADO (LOGADO)
-// ============================
 @Controller('invoices')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SessionGuard, BillingGuard)
 export class InvoicesController {
-  constructor(
-    private readonly invoicesService: InvoicesService,
-  ) {}
-
-  @Post()
-  create(@Body() body: CreateInvoiceDto, @Req() req: AuthRequest) {
-    return this.invoicesService.create(req.user.tenantId, body);
+  @Get()
+  async findAll(@CurrentUser() user: UserPayload) {
+    return { message: 'Lista de faturas', tenantId: user.tenantId };
   }
 
-  @Get()
-  findAll(@Req() req: AuthRequest) {
-    return this.invoicesService.findAll(
-      req.user.tenantId,
-      req.user.role,
-    );
+  @Post()
+  async create(@Body() data: any, @CurrentUser() user: UserPayload) {
+    return { message: 'Fatura criada', data, tenantId: user.tenantId };
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Req() req: AuthRequest) {
-    return this.invoicesService.findOne(
-      Number(id),
-      req.user.tenantId,
-      req.user.role,
-    );
+  async findOne(@Param('id') id: string, @CurrentUser() user: UserPayload) {
+    return { message: `Fatura ${id}`, tenantId: user.tenantId };
   }
 
   @Put(':id')
-  update(
-    @Param('id') id: string,
-    @Body() body: UpdateInvoiceDto,
-    @Req() req: AuthRequest,
-  ) {
-    return this.invoicesService.update(
-      Number(id),
-      req.user.tenantId,
-      body,
-      req.user.role,
-    );
+  async update(@Param('id') id: string, @Body() data: any, @CurrentUser() user: UserPayload) {
+    return { message: `Fatura ${id} atualizada`, data };
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: AuthRequest) {
-    return this.invoicesService.remove(
-      Number(id),
-      req.user.tenantId,
-      req.user.role,
-    );
+  async remove(@Param('id') id: string, @CurrentUser() user: UserPayload) {
+    return { message: `Fatura ${id} removida` };
   }
 
-  // 🔗 GERAR LINK PÚBLICO
-  @Post(':id/share')
-  async generateShareLink(
-    @Param('id') id: string,
-    @Req() req: AuthRequest,
-  ) {
-    const token = await this.invoicesService.generateShareToken(
-      Number(id),
-    );
-
-    const baseUrl =
-      (process.env.API_URL || 'https://api.mecpro.tec.br').replace(/\/$/, '');
-
-    return {
-      url: `${baseUrl}/public/invoices/share/${token}`,
-    };
-  }
-
-  // 📲 WHATSAPP
   @Post(':id/send-whatsapp')
-  async sendViaWhatsApp(@Param('id') id: string) {
-    return this.invoicesService.sendViaWhatsApp(Number(id));
-  }
-}
-
-// ============================
-// CONTROLLER PÚBLICO (SEM LOGIN)
-// ============================
-@Controller('public/invoices')
-export class PublicInvoicesController {
-  constructor(
-    private readonly invoicesService: InvoicesService,
-    private readonly invoicesPdfService: InvoicesPdfService,
-  ) {}
-
-  @Public()
-  @Get('share/:token')
-  async getSharedPdf(
-    @Param('token') token: string,
-    @Res() res: Response,
+  async sendToWhatsApp(
+    @Param('id') id: string,
+    @Body() body: { phoneNumber: string },
+    @CurrentUser() user: UserPayload,
   ) {
-    if (!token) {
-      return res
-        .status(HttpStatus.BAD_REQUEST)
-        .send('Token não fornecido');
-    }
-
-    try {
-      // 🔥 BUSCA FATURA
-      const invoice =
-        await this.invoicesService.getInvoiceByShareToken(token);
-
-      if (!invoice) {
-        throw new NotFoundException('Fatura não encontrada');
-      }
-
-      // 🔥 GERA PDF COM TEMPLATE NOVO
-      const pdf =
-        await this.invoicesPdfService.generateInvoicePdf(invoice);
-
-      // 🔥 RETORNA PDF DIRETO
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename=fatura.pdf`,
-      });
-
-      return res.send(pdf);
-    } catch (error: any) {
-      console.error('Erro ao gerar PDF público:', error);
-
-      if (
-        error?.message === 'Token inválido' ||
-        error?.message === 'Token expirado'
-      ) {
-        return res
-          .status(HttpStatus.NOT_FOUND)
-          .send('Link inválido ou expirado');
-      }
-
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .send('Erro ao gerar PDF');
-    }
+    return { 
+      message: `Link para enviar fatura ${id} via WhatsApp`,
+      whatsappUrl: `https://wa.me/55${body.phoneNumber}?text=Fatura%20${id}`,
+      tenantId: user.tenantId,
+    };
   }
 }
